@@ -3,8 +3,8 @@
 Plain-English notes on each pipeline step: what it does, why it was built this way, which settings
 matter, and what can go wrong. Written as each phase finishes.
 
-Pipeline: **PDF → page lines → clause chunks** → embeddings + keyword index → search → answer with citations.
-(Bold = built so far.)
+Pipeline: **PDF → page lines → clause chunks → embeddings + keyword index → search → answer with citations.**
+(Bold = built so far: everything up to the command-line demo, `python -m plant_rag.ask "…"`.)
 
 ---
 
@@ -110,3 +110,97 @@ python -m plant_rag.chunk
 ```
 
 Then open `notebooks/01_explore_docs.ipynb` to check the result.
+
+---
+
+## Step 3: Building the indexes (`index.py`, Phase 2)
+
+**What it does.** Builds two search indexes over all chunks and saves them in `index/`.
+
+- **Meaning search (dense).** Each chunk is turned into a vector of 768 numbers by Gemini's embedding
+  model (`gemini-embedding-001`). Texts with similar meaning get similar vectors, even across
+  languages (a Korean question can find an English paragraph). FAISS stores the vectors and finds the
+  closest ones. All vectors have length 1, so "closest" = highest cosine similarity.
+- **Keyword search (BM25).** Classic word matching that rewards rare words. Korean is first split into
+  morphemes with Kiwi (설비의, 설비를 → 설비), and particles/endings are dropped; English is lowercased.
+
+Each chunk is indexed with a **header**: `document title | law part/chapter | clause heading`, then the
+text. A short clause like "2. 적용범위" says little by itself; the header tells search which guide it
+belongs to.
+
+**Cost and time (10 documents, 1,156 chunks):** 37 s for embeddings (24 API batches, about US$0.05,
+paid once: vectors are cached in `index/embedding_cache.sqlite`), 7 s for Korean word splitting.
+
+**Settings:** `embedding.model`, `embedding.output_dim`, `embedding.batch_size`, `index.passage_header`.
+
+**What can go wrong.** If chunks change, the index must be rebuilt (`python -m plant_rag.index`); the
+search code refuses to run on a mismatched index. Only new or changed chunks are sent to the API.
+
+---
+
+## Step 4: Search (`retrieve.py`, Phase 2)
+
+**What it does.** Finds the 5 best passages for a question, in up to four stages:
+
+1. **BM25** top 50 and **dense** top 50.
+2. **RRF (Reciprocal Rank Fusion)** merges the two lists by rank: each passage gets
+   `1/(60 + rank)` from each list it appears in. Ranks are used because BM25 scores (e.g. 10.8) and
+   cosine similarities (e.g. 0.75) are on different scales.
+3. **Reranker** (`BAAI/bge-reranker-v2-m3`, runs locally on CPU). Unlike the embedding model, which
+   encodes question and passage separately, it reads them *together* and outputs a relevance score
+   from 0 to 1. More accurate, but slow, so it only sees 10 candidates.
+4. The top 5 go to the answer step.
+
+The four **setups** for the Phase 3 comparison switch stages on/off: A = BM25 only, B = dense only,
+C = hybrid (RRF), D = hybrid + reranker (default).
+
+**Two lessons from the hand test.**
+- *Cross-language and RRF.* For a Korean question whose answer is only in the English CFR, BM25 finds
+  only Korean passages. Meaning search ranked the right CFR paragraph #2, but after fusion it fell to
+  #18, outside the reranker's 10 candidates. Fix: the top 3 of each list always reach the reranker
+  (`rerank_min_per_list`), then the fused ranking fills the rest.
+- *The reranker is weaker across languages.* The same CFR paragraph scored 0.997 for the English
+  question but 0.021 for the Korean one. It still ranked #2, so the answer was right, but a high
+  refusal threshold would wrongly refuse such questions (see Step 5).
+
+**Speed on the laptop CPU** (8 threads): model load ~10 s (once per process), then ~1.8 s per
+candidate, so ~15–20 s per question with 10 candidates. Everything else takes under 3 s.
+`max_length: 256` would halve this but cuts long clauses; to be measured in Phase 3.
+
+**Settings:** `retrieval.*` (`bm25_top_k`, `dense_top_k`, `rrf_k`, `rerank_candidates`,
+`rerank_min_per_list`, `final_k`), `reranker.max_length`, `reranker.num_threads`.
+
+---
+
+## Step 5: Answering with citations (`generate.py`, `ask.py`, Phase 2)
+
+**What it does.** Sends the question and the 5 numbered passages to Gemini (`gemini-3.8-flash`,
+temperature 0) with strict rules:
+
+- answer in the question's language (Korean question → Korean answer, even from English evidence);
+- every factual sentence ends with `[n]` citations; only the passages may be used;
+- answer when passages use a slightly different term (변경관리 vs 변경요소관리);
+- only if no passage is relevant, reply with an exact "not found" sentence.
+
+The `[n]` numbers are then mapped back to document, clause and page for display.
+
+**Refusing ("not found").** Two layers:
+1. *Before the API call:* if the best reranker score is below `answer.min_rerank_score` (0.01), we
+   refuse without calling the model. No cost and no risk of a made-up answer.
+2. *By the model:* if the passages don't contain the answer.
+
+The threshold is low on purpose (cross-language scores are low, see Step 4). It will be tuned on the
+dev questions in Phase 3.
+
+**Hand test (Phase 2):** 10 questions (5 Korean, 5 English, including cross-language and 2 questions the
+documents cannot answer). All 10 behaved as expected; report in `eval/results/phase2_hand_test.md`.
+LLM time 4–16 s; the model also spends 150–1,900 "thinking" tokens per answer (billed as output).
+`llm.thinking_level` can lower that.
+
+**Run:**
+
+```
+python -m plant_rag.index
+python -m plant_rag.ask "안전밸브는 어떤 설비에 설치해야 하나요?"
+python -m plant_rag.ask "What must a hot work permit document?" --setup C --show-evidence
+```

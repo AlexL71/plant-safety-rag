@@ -1,31 +1,69 @@
-"""Answer generation.
+"""Answer generation: prompt with numbered evidence -> Gemini -> answer with [n] citations.
 
-All LLM calls go through `call_llm`. To replace Gemini with a local or on-premise model,
-change only this function. Prompt building and citation parsing are added in Phase 2.
+All LLM calls go through `call_llm_record` / `call_llm`. To replace Gemini with a local or on-premise
+model, change only these functions.
+
+Refusal happens in two places:
+1. Before the API call: if the best reranker score is below `answer.min_rerank_score`, we answer
+   "not found" without calling the model (no cost, no chance to hallucinate).
+2. In the prompt: the model must reply with the exact "not found" sentence if the evidence does not
+   contain the answer.
 """
 from __future__ import annotations
 
 import hashlib
 import json
 import logging
+import re
 import time
+from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from google.genai import types
 
 from plant_rag.gemini_client import call_with_retry, get_client
 
+if TYPE_CHECKING:
+    from plant_rag.retrieve import Hit
+
 log = logging.getLogger(__name__)
 
+NOT_FOUND = {
+    "en": "Not found in the provided documents.",
+    "ko": "제공된 문서에서 찾을 수 없습니다.",
+}
+LANG_NAME = {"en": "English", "ko": "Korean"}
+
+SYSTEM_PROMPT = """You answer questions about industrial process-safety standards and regulations.
+Use ONLY the numbered evidence passages in the user message. Never use outside knowledge.
+
+Rules:
+1. Write the answer in {lang_name}, even if the evidence is in another language. Keep clause numbers,
+   units and numeric values exactly as written in the evidence.
+2. Every sentence that states a fact must end with the number(s) of the passage(s) that support it,
+   like [1] or [2][3]. Cite only passages that really support the sentence.
+3. Answer whenever the passages contain relevant information, even if they use a slightly different
+   term than the question (e.g. 변경관리 vs 변경요소관리, "PHA" vs "process hazard analysis").
+4. If the passages answer only part of the question, answer that part and say which part is not covered.
+5. Only if NONE of the passages contains information that answers the question, reply with exactly
+   this sentence and nothing else:
+   {not_found}
+6. Be concise: a direct answer first, then the key conditions or numbers. No introduction."""
+
+
+# ------------------------------------------------------------------ LLM call
 
 def _cache_path(cache_dir: Path, request: dict[str, Any]) -> Path:
     key = hashlib.sha256(json.dumps(request, sort_keys=True, ensure_ascii=False).encode("utf-8")).hexdigest()
     return cache_dir / key[:2] / f"{key}.json"
 
 
-def call_llm(prompt: str, cfg: dict[str, Any], system: str | None = None) -> str:
-    """Return the model's text answer. Identical requests are served from cache/llm/ and never paid for twice."""
+def call_llm_record(prompt: str, cfg: dict[str, Any], system: str | None = None) -> dict[str, Any]:
+    """Call the LLM (or read the cache). Returns the cached record plus "cached": True/False.
+
+    Identical requests are served from cache/llm/ and never paid for twice.
+    """
     llm = cfg["llm"]
     request = {
         "model": llm["model"],
@@ -34,15 +72,19 @@ def call_llm(prompt: str, cfg: dict[str, Any], system: str | None = None) -> str
         "temperature": llm["temperature"],
         "max_output_tokens": llm["max_output_tokens"],
     }
+    thinking = llm.get("thinking_level")
+    if thinking:  # only part of the cache key when set, so older cached calls stay valid
+        request["thinking_level"] = thinking
     path = _cache_path(cfg["paths"]["llm_cache_dir"], request)
     if path.exists():
-        return json.loads(path.read_text(encoding="utf-8"))["text"]
+        return json.loads(path.read_text(encoding="utf-8")) | {"cached": True}
 
     client = get_client(cfg)
     gen_config = types.GenerateContentConfig(
         temperature=llm["temperature"],
         max_output_tokens=llm["max_output_tokens"],
         system_instruction=system,
+        thinking_config=types.ThinkingConfig(thinking_level=thinking.upper()) if thinking else None,
     )
     t0 = time.perf_counter()
     resp = call_with_retry(
@@ -70,4 +112,85 @@ def call_llm(prompt: str, cfg: dict[str, Any], system: str | None = None) -> str
     tmp = path.with_suffix(".tmp")
     tmp.write_text(json.dumps(record, ensure_ascii=False, indent=2), encoding="utf-8")
     tmp.replace(path)  # atomic: no half-written cache files if interrupted
-    return text
+    return record | {"cached": False}
+
+
+def call_llm(prompt: str, cfg: dict[str, Any], system: str | None = None) -> str:
+    """Return only the model's text answer (see call_llm_record)."""
+    return call_llm_record(prompt, cfg, system)["text"]
+
+
+# ------------------------------------------------------------------ answering
+
+@dataclass
+class Answer:
+    question: str
+    lang: str
+    text: str
+    refused: bool
+    refusal_reason: str = ""                                # "low_score", "no_hits", "model" or ""
+    cited: list[int] = field(default_factory=list)          # 1-based evidence numbers cited in the text
+    evidence: list[Hit] = field(default_factory=list)
+    llm_seconds: float = 0.0
+    llm_cached: bool = False
+    usage: dict[str, Any] = field(default_factory=dict)
+
+
+def detect_lang(text: str) -> str:
+    """Korean if the question contains Hangul, otherwise English."""
+    return "ko" if re.search(r"[가-힣]", text) else "en"
+
+
+def format_location(chunk: dict) -> str:
+    pages = f"p. {chunk['page_start']}" if chunk["page_start"] == chunk["page_end"] else \
+        f"pp. {chunk['page_start']}–{chunk['page_end']}"
+    return f"{chunk['title']}, {chunk['clause_id']}, {pages}"
+
+
+def build_prompt(question: str, hits: list[Hit], lang: str) -> tuple[str, str]:
+    system = SYSTEM_PROMPT.format(lang_name=LANG_NAME[lang], not_found=NOT_FOUND[lang])
+    blocks = []
+    for n, h in enumerate(hits, 1):
+        c = h.chunk
+        context = f" ({c['section']})" if c.get("section") else ""
+        blocks.append(f"[{n}] {format_location(c)}{context}\n{c['text']}")
+    prompt = f"Question: {question}\n\nEvidence passages:\n\n" + "\n\n".join(blocks)
+    return system, prompt
+
+
+def parse_citations(text: str, n_evidence: int) -> list[int]:
+    """Distinct cited numbers in order of first use; numbers outside 1..n are ignored."""
+    seen: list[int] = []
+    for m in re.finditer(r"\[(\d+(?:\s*[,，]\s*\d+)*)\]", text):  # [1] and [1, 2]
+        for num in re.split(r"\s*[,，]\s*", m.group(1)):
+            n = int(num)
+            if 1 <= n <= n_evidence and n not in seen:
+                seen.append(n)
+    return seen
+
+
+def is_refusal(text: str) -> bool:
+    t = text.strip()
+    return any(t.startswith(s.rstrip(".")) for s in NOT_FOUND.values())
+
+
+def answer(question: str, hits: list[Hit], cfg: dict[str, Any]) -> Answer:
+    lang = detect_lang(question)
+    if not hits:
+        return Answer(question, lang, NOT_FOUND[lang], True, "no_hits")
+    top = hits[0].rerank_score
+    threshold = float(cfg["answer"]["min_rerank_score"])
+    if top is not None and top < threshold:
+        return Answer(question, lang, NOT_FOUND[lang], True, "low_score", evidence=hits)
+
+    system, prompt = build_prompt(question, hits, lang)
+    rec = call_llm_record(prompt, cfg, system)
+    text = rec["text"].strip()
+    refused = is_refusal(text)
+    return Answer(
+        question=question, lang=lang, text=text, refused=refused,
+        refusal_reason="model" if refused else "",
+        cited=[] if refused else parse_citations(text, len(hits)),
+        evidence=hits, llm_seconds=float(rec.get("seconds", 0.0)), llm_cached=bool(rec["cached"]),
+        usage=rec.get("usage", {}),
+    )

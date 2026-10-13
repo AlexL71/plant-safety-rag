@@ -75,7 +75,8 @@ class Chunk:
 # ---------------------------------------------------------------- text joining
 
 @lru_cache(maxsize=1)
-def _kiwi():
+def get_kiwi():
+    """One shared Kiwi (Korean morphological analyzer) instance; loading takes ~1 s."""
     from kiwipiepy import Kiwi
 
     return Kiwi()
@@ -85,7 +86,7 @@ def _space_at_junction(left: str, right: str) -> bool:
     """Korean line wrap: ask Kiwi whether a space belongs between the last word and the next word."""
     a = re.search(r"\S+$", left).group()[-8:]
     b = re.match(r"\S+", right).group()[:8]
-    spaced = _kiwi().space(a + b, reset_whitespace=False)
+    spaced = get_kiwi().space(a + b, reset_whitespace=False)
     n = 0
     for i, ch in enumerate(spaced):
         if ch != " ":
