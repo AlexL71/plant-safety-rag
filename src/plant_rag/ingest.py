@@ -65,7 +65,14 @@ def _clean_unreadable(text: str, placeholder: str) -> tuple[str, int]:
 
 
 def _line_record(line: dict[str, Any], gap_ratio: float) -> dict[str, Any] | None:
-    """Rebuild one line's text from its characters, inserting spaces at wide gaps."""
+    """Rebuild one line's text from its characters, inserting spaces at wide gaps.
+
+    Rotated lines are skipped: in our PDFs the only non-horizontal text is a vertical print stamp in the
+    CFR margin ("... with CFR") that would otherwise land in the middle of sentences.
+    """
+    dx, dy = line.get("dir", (1.0, 0.0))
+    if abs(dx - 1.0) > 0.01 or abs(dy) > 0.01:
+        return None
     chars = [(c, s) for s in line["spans"] for c in s["chars"]]
     if not chars:
         return None

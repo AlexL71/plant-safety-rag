@@ -60,6 +60,10 @@ answer:
                                       # (0.02) than the same question in English (0.997)
   snippet_chars: 160                  # length of the source snippet shown under an answer
 
+evaluate:
+  answer_setups: [C, D]               # LLM answers only for these setups (cost); retrieval metrics for all
+  k_eval: 10                          # retrieve this many per question for MRR@10
+
 api_key:
   env_var: GEMINI_API_KEY             # takes priority if set
   file: secrets/gemini_api_key.txt    # never printed, logged or committed

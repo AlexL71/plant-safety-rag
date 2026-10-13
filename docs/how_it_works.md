@@ -54,6 +54,8 @@ with page number, position and font, to `data/processed/pages.jsonl`.
    private-use characters with no meaning. Runs of them become `[수식]`; counts are logged.
 
 Pages with almost no text (scans, figures) are skipped and listed in `data/processed/ingest_log.csv`.
+Rotated text is skipped too: the US CFR PDF has a vertical print stamp in the margin ("… with CFR")
+that otherwise lands in the middle of sentences.
 
 **Settings that matter:** `ingest.space_gap_ratio`, `ingest.header_edge_rows`,
 `ingest.header_repeat_min_pages`, `ingest.min_page_chars`.
