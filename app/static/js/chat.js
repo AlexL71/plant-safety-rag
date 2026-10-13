@@ -1,22 +1,17 @@
 /* DocAgent user chat. */
 "use strict";
 
+/* [label key in i18n.js, question]; the questions stay as written: they show the cross-language search */
 const EXAMPLES = [
-  ["Korean regulation", "안전밸브는 어떤 설비에 설치해야 하나요?"],
-  ["Korean → US standard", "공정위험성평가는 몇 년마다 다시 해야 하나요?"],
-  ["English → Korean guide", "How long must completed work permits be kept?"],
-  ["US PSM", "What must a pre-startup safety review confirm before highly hazardous chemicals are introduced?"],
+  ["ex.1", "안전밸브는 어떤 설비에 설치해야 하나요?"],
+  ["ex.2", "공정위험성평가는 몇 년마다 다시 해야 하나요?"],
+  ["ex.3", "How long must completed work permits be kept?"],
+  ["ex.4", "What must a pre-startup safety review confirm before highly hazardous chemicals are introduced?"],
 ];
 const FINISH_PAUSE_MS = 900;  // how long the all-green checklist stays visible before the answer
 const FADE_MS = 180;          // checklist fade-out before the answer appears
 const LANGS = ["auto", "ko", "en"];  // answer language: auto = same language as the question
-const STAGES = {
-  condense: "Understanding your follow-up",
-  translate: "Translating the question (KO ↔ EN)",
-  search: "Searching the documents",
-  rerank: "Re-reading the best passages",
-  answer: "Writing the answer with citations",
-};
+const STAGES = ["condense", "translate", "search", "rerank", "answer"];  // labels: "stage.<name>" in i18n.js
 
 const $ = (id) => document.getElementById(id);
 const viewer = new DA.Viewer();
@@ -32,23 +27,23 @@ async function loadChats() {
   const data = await DA.api("/api/chats");
   maxChats = data.max;
   const list = $("chatList");
-  list.innerHTML = data.chats.length ? "" : `<div class="small muted" style="padding:8px 12px">No chats yet.</div>`;
+  list.innerHTML = data.chats.length ? "" : `<div class="small muted" style="padding:8px 12px">${DA.t("chat.none")}</div>`;
   for (const c of data.chats) {
     const item = document.createElement("div");
     item.className = "chat-item" + (c.id === current ? " active" : "");
     item.innerHTML = `<span class="t" title="${DA.esc(c.title)}">${DA.esc(c.title)}</span>
-                      <button class="del" type="button" aria-label="Delete chat">✕</button>`;
+                      <button class="del" type="button" aria-label="${DA.t("chat.deleteAria")}">✕</button>`;
     item.onclick = () => openChat(c.id);
     item.querySelector(".del").onclick = async (e) => {
       e.stopPropagation();
-      if (!confirm("Delete this chat?")) return;
+      if (!confirm(DA.t("chat.deleteConfirm"))) return;
       await DA.api(`/api/chats/${c.id}`, { method: "DELETE" });
       if (c.id === current) newChat();
       loadChats();
     };
     list.appendChild(item);
   }
-  $("chatCount").textContent = `${data.chats.length} / ${maxChats} chats`;
+  $("chatCount").textContent = DA.t("chat.count", { n: data.chats.length, max: maxChats });
   $("chatMeter").style.width = `${Math.min(100, (100 * data.chats.length) / maxChats)}%`;
 }
 
@@ -56,7 +51,7 @@ function newChat() {
   current = null;
   $("thread").innerHTML = "";
   $("emptyState").hidden = false;
-  $("chatTitle").textContent = "New chat";
+  $("chatTitle").textContent = DA.t("chat.new");
   document.querySelectorAll(".chat-item.active").forEach((el) => el.classList.remove("active"));
   $("input").focus();
 }
@@ -78,6 +73,7 @@ async function openChat(id) {
 }
 
 /* ---------------------------------------------------------------- messages */
+const setText = (el, text) => { if (el && el.textContent !== text) el.textContent = text; };
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 function scrollDown() { const s = $("scroll"); s.scrollTop = s.scrollHeight; }
 
@@ -106,10 +102,10 @@ function addBot() {
     const firstRender = !list;
     if (firstRender) {
       bubble.innerHTML = `<div class="steps"></div><div class="meta-line"><span class="elapsed">0 s</span>
-        <span class="note">· searching ~1,155 clauses in 10 documents</span></div>`;
+        <span class="note"></span></div>`;
       list = bubble.querySelector(".steps");
     }
-    const order = Object.keys(STAGES).filter((s) => seen.includes(s) || ["search", "rerank", "answer"].includes(s));
+    const order = STAGES.filter((s) => seen.includes(s) || ["search", "rerank", "answer"].includes(s));
     const active = finished ? null : seen.length ? seen[seen.length - 1] : order[0];  // first step runs before any event
     order.forEach((s, i) => {
       let row = list.querySelector(`[data-stage="${s}"]`);
@@ -118,18 +114,20 @@ function addBot() {
         row.className = "step todo" + (firstRender ? "" : " enter");
         row.dataset.stage = s;
         row.innerHTML = `<span class="ic"><span class="dot"></span><span class="spinner"></span><span class="ck">✓</span></span>
-                         <span>${STAGES[s]}</span>`;
+                         <span class="lbl"></span>`;
         list.insertBefore(row, list.children[i] || null);
       }
       const state = finished || (seen.includes(s) && s !== active) ? "done" : s === active ? "now" : "todo";
       if (!row.classList.contains(state)) { row.classList.remove("todo", "now", "done"); row.classList.add(state); }
+      setText(row.querySelector(".lbl"), DA.t(`stage.${s}`));  // follows an interface-language switch
     });
     const secs = ((Date.now() - t0) / 1000).toFixed(0);
     if (finished) {
       list.classList.add("finished");
-      bubble.querySelector(".meta-line").innerHTML = `<span class="chip ok">✓ Done in ${secs} s</span>`;
+      bubble.querySelector(".meta-line").innerHTML = `<span class="chip ok">${DA.t("steps.done", { s: secs })}</span>`;
     } else {
-      bubble.querySelector(".elapsed").textContent = `${secs} s`;
+      setText(bubble.querySelector(".elapsed"), DA.t("steps.secs", { s: secs }));
+      setText(bubble.querySelector(".note"), DA.t("steps.scope"));
     }
   }
 
@@ -150,24 +148,25 @@ function addBot() {
       }
       bubble.classList.add("reveal");
       const passages = m.passages || {};
-      const lang = m.lang === "ko" ? "Korean" : "English";
+      const lang = DA.t(m.lang === "ko" ? "lang.ko" : "lang.en");
+      const nSrc = Object.keys(passages).length;
       if (m.refused) {
         bubble.classList.add("refused");
-        bubble.innerHTML = `<div class="refused-head"><span class="chip muted">Not found</span></div>
+        bubble.innerHTML = `<div class="refused-head"><span class="chip muted">${DA.t("ref.head")}</span></div>
           <div class="answer">${DA.renderAnswer(m.text, {})}</div>
-          <div class="meta-line">The documents searched don't answer this. Try rephrasing, or ask about a related clause.</div>`;
+          <div class="meta-line">${DA.t("ref.note")}</div>`;
       } else {
         bubble.innerHTML = `<div class="answer">${DA.renderAnswer(m.text, passages)}</div>
-          <div class="meta-line"><span class="chip">${Object.keys(passages).length} source${Object.keys(passages).length === 1 ? "" : "s"}</span>
-          <span>Answered in ${lang}${m.total_s ? ` · ${Math.round(m.total_s)} s` : ""}</span>
-          ${m.standalone ? `<span title="Your follow-up was read as this question">· read as: “${DA.esc(m.standalone)}”</span>` : ""}</div>`;
+          <div class="meta-line"><span class="chip">${DA.t(nSrc === 1 ? "ans.source1" : "ans.sourceN", { n: nSrc })}</span>
+          <span>${DA.t("ans.in", { lang })}${m.total_s ? ` · ${DA.t("steps.secs", { s: Math.round(m.total_s) })}` : ""}</span>
+          ${m.standalone ? `<span title="${DA.esc(DA.t("ans.readAsTitle"))}">${DA.t("ans.readAs", { q: DA.esc(m.standalone) })}</span>` : ""}</div>`;
         popover.attach(bubble, passages);
       }
     },
     error(msg) {
       clearInterval(timer);
       bubble.classList.add("refused");
-      bubble.innerHTML = `<div class="refused-head"><span class="chip bad">Error</span></div><div>${DA.esc(msg)}</div>`;
+      bubble.innerHTML = `<div class="refused-head"><span class="chip bad">${DA.t("err.head")}</span></div><div>${DA.esc(msg)}</div>`;
     },
   };
 }
@@ -179,12 +178,13 @@ async function ask(question) {
   $("send").disabled = true;
   $("emptyState").hidden = true;
   try {
+    const isNewChat = !current;
     if (!current) {
       const chat = await DA.api("/api/chats", { method: "POST" });
       current = chat.id;
     }
     addUser(question);
-    $("chatTitle").textContent = $("chatTitle").textContent === "New chat" ? question.slice(0, 70) : $("chatTitle").textContent;
+    if (isNewChat) $("chatTitle").textContent = question.slice(0, 70);
     setTimeout(loadChats, 400);  // show the new chat in the sidebar while the answer is prepared
     const bot = addBot();
     bot.start();
@@ -233,20 +233,42 @@ function setLang(lang) {
 document.querySelectorAll("#langSeg button").forEach((b) => { b.onclick = () => setLang(b.dataset.lang); });
 setLang(answerLang);
 
-$("examples").innerHTML = EXAMPLES.map(([tag, q]) => `<button class="ex" type="button"><small>${DA.esc(tag)}</small>${DA.esc(q)}</button>`).join("");
-$("examples").querySelectorAll(".ex").forEach((b, i) => { b.onclick = () => ask(EXAMPLES[i][1]); });
+function renderExamples() {
+  $("examples").innerHTML = EXAMPLES.map(([key, q]) => `<button class="ex" type="button"><small>${DA.esc(DA.t(key))}</small>${DA.esc(q)}</button>`).join("");
+  $("examples").querySelectorAll(".ex").forEach((b, i) => { b.onclick = () => ask(EXAMPLES[i][1]); });
+}
 
+let lastStatus = null;
+function renderStatus() {
+  const s = lastStatus;
+  if (!s) return;
+  $("status").innerHTML = s.ready
+    ? `<span class="chip ok">${DA.t("status.ready", { n: s.documents })}</span>`
+    : s.error ? `<span class="chip bad">${DA.t("status.error")}</span>`
+      : `<span class="chip warn"><span class="spinner"></span>${DA.t("status.starting")}</span>`;
+}
 async function pollStatus() {
   try {
-    const s = await DA.api("/api/status");
-    $("status").innerHTML = s.ready
-      ? `<span class="chip ok">● Ready · ${s.documents} documents</span>`
-      : s.error ? `<span class="chip bad">Engine error</span>` : `<span class="chip warn"><span class="spinner"></span>Starting up…</span>`;
-    if (!s.ready && !s.error) setTimeout(pollStatus, 2000);
+    lastStatus = await DA.api("/api/status");
+    renderStatus();
+    if (!lastStatus.ready && !lastStatus.error) setTimeout(pollStatus, 2000);
   } catch (_) { setTimeout(pollStatus, 4000); }
 }
+
+/* Interface language switch: redraw everything built in JavaScript. An answer being prepared keeps going;
+   its step labels follow on the next tick. */
+document.addEventListener("da:lang", () => {
+  renderExamples();
+  renderStatus();
+  loadChats();
+  if (!current) $("chatTitle").textContent = DA.t("chat.new");
+  else if (!busy) openChat(current);
+});
+
+renderExamples();
 pollStatus();
 loadChats();
+if (!current) $("chatTitle").textContent = DA.t("chat.new");
 // Deep links: /chat?q=<question> asks it in a new chat; /chat?source=<chunk_id> opens that passage
 const params = new URLSearchParams(location.search);
 if (params.get("source")) viewer.open({ chunk_id: params.get("source") });

@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>DocAgent · The AI agent for EPC project documents</title>
+<title data-i18n="home.pageTitle">DocAgent · The AI agent for EPC project documents</title>
 <meta name="description" content="Ask your project documents anything. Answers with clause references, or an honest 'not found'.">
 <link rel="icon" href="/brand/docagent_icon.svg" type="image/svg+xml">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
@@ -16,7 +16,8 @@
   nav.top .wrap { display: flex; align-items: center; gap: 28px; height: 68px; }
   nav.top .links { display: flex; gap: 22px; font-size: 14px; }
   nav.top .links a { color: var(--ink-2); }
-  nav.top .cta { margin-left: auto; display: flex; gap: 10px; }
+  nav.top .cta { margin-left: auto; display: flex; gap: 10px; align-items: center; }
+  nav.top .ui-lang { font-size: 12.5px; }
 
   .hero { position: relative; overflow: hidden; padding: 84px 0 72px;
           background: radial-gradient(1100px 480px at 85% -10%, var(--brand-50), transparent 65%),
@@ -84,34 +85,35 @@
 <nav class="top">
   <div class="wrap">
     <a href="/" aria-label="DocAgent home"><img class="logo" src="/brand/docagent_logo.svg" alt="DocAgent"></a>
-    <div class="links"><a href="#what">Product</a><a href="#modules">Modules</a><a href="#results">Results</a></div>
-    <div class="cta"><a class="btn btn-ghost btn-sm" href="/admin" id="adminLink">Admin</a><a class="btn btn-primary btn-sm" href="/chat">Start asking</a></div>
+    <div class="links"><a href="#what" data-i18n="nav.product">Product</a><a href="#modules" data-i18n="nav.modules">Modules</a><a href="#results" data-i18n="nav.results">Results</a></div>
+    <div class="cta">
+      <div class="seg ui-lang" role="group" aria-label="Interface language" data-i18n-attr="aria-label:ui.aria"><button type="button" data-ui-lang="en">EN</button><button type="button" data-ui-lang="ko">한국어</button></div><a class="btn btn-ghost btn-sm" href="/admin" id="adminLink" data-i18n="nav.admin">Admin</a><a class="btn btn-primary btn-sm" href="/chat" data-i18n="nav.start">Start asking</a></div>
   </div>
 </nav>
 
 <header class="hero">
   <div class="wrap">
     <div>
-      <span class="eyebrow"><i></i>AI agent for EPC documents · Korean &amp; English</span>
-      <h1>The AI agent for <em>EPC project documents</em>.</h1>
-      <p class="lead">DocAgent brings your project documents into one place and lets engineers ask questions, check documents
+      <span class="eyebrow" data-i18n="hero.eyebrow"><i></i>AI agent for EPC documents · Korean &amp; English</span>
+      <h1 data-i18n="hero.title">The AI agent for <em>EPC project documents</em>.</h1>
+      <p class="lead" data-i18n="hero.lead">DocAgent brings your project documents into one place and lets engineers ask questions, check documents
         and prepare reviews in plain language, with every answer linked to the exact clause it came from.</p>
       <div class="actions">
-        <a class="btn btn-primary" href="/chat">Ask your documents →</a>
-        <a class="btn btn-ghost" href="#results">See the measured results</a>
+        <a class="btn btn-primary" href="/chat" data-i18n="hero.ask">Ask your documents →</a>
+        <a class="btn btn-ghost" href="#results" data-i18n="hero.see">See the measured results</a>
       </div>
-      <div class="trust"><span>Clause-level citations</span><span>Honest "not found"</span><span>Korean ↔ English</span></div>
+      <div class="trust" data-i18n="hero.trust"><span>Clause-level citations</span><span>Honest "not found"</span><span>Korean ↔ English</span></div>
     </div>
     <div class="mock" aria-hidden="true">
       <div class="card chat">
-        <div class="q">How long must completed work permits be kept?</div>
-        <div class="a">Work permits are kept for <strong>1 year</strong>; confined-space entry permits for
+        <div class="q" data-i18n="mock.q">How long must completed work permits be kept?</div>
+        <div class="a" data-i18n="mock.a">Work permits are kept for <strong>1 year</strong>; confined-space entry permits for
           <strong>3 years</strong> <span class="cite">2</span>. Permit records stay on site for at least 30 days after
           the work, then are archived for monitoring and audits <span class="cite">1</span>.</div>
       </div>
       <div class="src">
         <div class="t">안전작업허가에 관한 기술지원규정</div>
-        <div class="m">5.5 허가서의 보존 · p. 8 · Korean</div>
+        <div class="m" data-i18n="mock.meta">5.5 허가서의 보존 · p. 8 · Korean</div>
         <div class="doc"><div class="bar" style="width:90%"></div><div class="bar" style="width:70%"></div>
           <div class="hlbox"><div class="bar" style="width:95%"></div><div class="bar" style="width:80%"></div></div>
           <div class="bar" style="width:85%"></div></div>
@@ -122,9 +124,9 @@
 
 <section class="block" id="problem">
   <div class="wrap">
-    <div class="kicker">The problem</div>
-    <h2>The answer is somewhere in thousands of documents.</h2>
-    <p class="sub">On an EPC project, the answer to an engineering question is spread across specifications, standards,
+    <div class="kicker" data-i18n="problem.kicker">The problem</div>
+    <h2 data-i18n="problem.h">The answer is somewhere in thousands of documents.</h2>
+    <p class="sub" data-i18n="problem.sub">On an EPC project, the answer to an engineering question is spread across specifications, standards,
       regulations, datasheets and vendor documents and their revisions, often in more than one language. Engineers lose
       hours finding the right clause, and a missed requirement costs money and safety.</p>
   </div>
@@ -132,82 +134,90 @@
 
 <section class="block alt" id="what">
   <div class="wrap">
-    <div class="kicker">What DocAgent does</div>
-    <h2>An agent, not just a chatbot.</h2>
-    <p class="sub">A chatbot answers one question. An agent plans several steps and uses tools: it searches the documents,
+    <div class="kicker" data-i18n="what.kicker">What DocAgent does</div>
+    <h2 data-i18n="what.h">An agent, not just a chatbot.</h2>
+    <p class="sub" data-i18n="what.sub">A chatbot answers one question. An agent plans several steps and uses tools: it searches the documents,
       reads the right clauses, compares them and prepares a result.</p>
     <div class="grid g3">
       <div class="card feature"><div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M9 11l3 3 8-8"/><path d="M20 12v6a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h9"/></svg></div>
-        <h3>Answers with proof</h3><p>Every statement cites the document, clause and page. Hover a number to read the passage; click to see it outlined in the original.</p></div>
+        <h3 data-i18n="f1.h">Answers with proof</h3><p data-i18n="f1.p">Every statement cites the document, clause and page. Hover a number to read the passage; click to see it outlined in the original.</p></div>
       <div class="card feature"><div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v6"/><path d="M12 17h.01"/></svg></div>
-        <h3>"Not found" instead of guessing</h3><p>When the documents don't cover the question, DocAgent says so, and shows the closest passages it checked.</p></div>
+        <h3 data-i18n="f2.h">"Not found" instead of guessing</h3><p data-i18n="f2.p">When the documents don't cover the question, DocAgent says so, and shows the closest passages it checked.</p></div>
       <div class="card feature"><div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 5h8M8 3v2M5 9c1.5 3 4 5 7 6"/><path d="M11 9c-1 3-3 6-6 8"/><path d="M13 21l4-10 4 10M14.5 18h5"/></svg></div>
-        <h3>Works across languages</h3><p>Ask in Korean and get the answer from an English standard, or the other way round.</p></div>
+        <h3 data-i18n="f3.h">Works across languages</h3><p data-i18n="f3.p">Ask in Korean and get the answer from an English standard, or the other way round.</p></div>
       <div class="card feature"><div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M10 13a5 5 0 0 0 7.5.5l3-3a5 5 0 0 0-7-7l-1.7 1.7"/><path d="M14 11a5 5 0 0 0-7.5-.5l-3 3a5 5 0 0 0 7 7l1.7-1.7"/></svg></div>
-        <h3>Works with your existing system</h3><p>Designed to connect to your CDE or document management system. You don't have to replace it.</p></div>
+        <h3 data-i18n="f4.h">Works with your existing system</h3><p data-i18n="f4.p">Designed to connect to your CDE or document management system. You don't have to replace it.</p></div>
       <div class="card feature"><div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c1.5-4 4.5-6 8-6s6.5 2 8 6"/></svg></div>
-        <h3>A person stays in control</h3><p>The agent prepares comments, checks and status suggestions, and a person approves them. Approvals are formal project records.</p></div>
+        <h3 data-i18n="f5.h">A person stays in control</h3><p data-i18n="f5.p">The agent prepares comments, checks and status suggestions, and a person approves them. Approvals are formal project records.</p></div>
       <div class="card feature"><div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 3v18h18"/><path d="M7 15l4-4 3 3 5-6"/></svg></div>
-        <h3>Measured, not assumed</h3><p>Search methods compared on a bilingual test set; answers graded for faithfulness to their sources.</p></div>
+        <h3 data-i18n="f6.h">Measured, not assumed</h3><p data-i18n="f6.p">Search methods compared on a bilingual test set; answers graded for faithfulness to their sources.</p></div>
     </div>
   </div>
 </section>
 
 <section class="block" id="modules">
   <div class="wrap">
-    <div class="kicker">Modules</div>
-    <h2>One platform, built step by step.</h2>
-    <p class="sub">Built modules work and were evaluated. Planned modules are on the roadmap and not available yet.</p>
+    <div class="kicker" data-i18n="mod.kicker">Modules</div>
+    <h2 data-i18n="mod.h">One platform, built step by step.</h2>
+    <p class="sub" data-i18n="mod.sub">Built modules work and were evaluated. Planned modules are on the roadmap and not available yet.</p>
     <div class="grid g3">
-      <div class="card module"><span class="chip ok">Built</span><h3>DocAgent Ask</h3><p>Ask in Korean or English, get an answer with clause-level citations, or "not found".</p></div>
-      <div class="card module"><span class="chip ok">Built · core</span><h3>DocAgent Search</h3><p>Find any document or clause across all sources and languages.</p></div>
-      <div class="card module planned"><span class="chip muted">Planned</span><h3>DocAgent Library</h3><p>One register of all project documents, connected to SharePoint, Aconex, ProjectWise or shared folders.</p></div>
-      <div class="card module planned"><span class="chip muted">Planned</span><h3>DocAgent Check</h3><p>Check a datasheet or vendor document against specs and standards, and list mismatches.</p></div>
-      <div class="card module planned"><span class="chip muted">Planned</span><h3>DocAgent Flow</h3><p>Track reviews, approvals and revisions; draft comment sheets for approval.</p></div>
+      <div class="card module"><span class="chip ok" data-i18n="chip.built">Built</span><h3>DocAgent Ask</h3><p data-i18n="m1.p">Ask in Korean or English, get an answer with clause-level citations, or "not found".</p></div>
+      <div class="card module"><span class="chip ok" data-i18n="chip.core">Built · core</span><h3>DocAgent Search</h3><p data-i18n="m2.p">Find any document or clause across all sources and languages.</p></div>
+      <div class="card module planned"><span class="chip muted" data-i18n="chip.planned">Planned</span><h3>DocAgent Library</h3><p data-i18n="m3.p">One register of all project documents, connected to SharePoint, Aconex, ProjectWise or shared folders.</p></div>
+      <div class="card module planned"><span class="chip muted" data-i18n="chip.planned">Planned</span><h3>DocAgent Check</h3><p data-i18n="m4.p">Check a datasheet or vendor document against specs and standards, and list mismatches.</p></div>
+      <div class="card module planned"><span class="chip muted" data-i18n="chip.planned">Planned</span><h3>DocAgent Flow</h3><p data-i18n="m5.p">Track reviews, approvals and revisions; draft comment sheets for approval.</p></div>
     </div>
     <div class="tasks">
-      <div class="card task"><div class="ask">"Where must a relief valve be installed?"</div><div class="does">Searches the regulations and KOSHA guides, then answers with clause citations.</div><span class="chip ok">Works today</span></div>
-      <div class="card task"><div class="ask">"Is this pump datasheet compliant with our specs?"</div><div class="does">Finds the specs, reads the datasheet, compares the values and lists mismatches.</div><span class="chip muted">Planned</span></div>
-      <div class="card task"><div class="ask">"What changed between Rev B and Rev C?"</div><div class="does">Gets both revisions, compares them and summarizes the changes.</div><span class="chip muted">Planned</span></div>
-      <div class="card task"><div class="ask">"Prepare review comments for this vendor document"</div><div class="does">Checks it against the standards and drafts a comment sheet for you to approve.</div><span class="chip muted">Planned</span></div>
+      <div class="card task"><div class="ask" data-i18n="t1.ask">"Where must a relief valve be installed?"</div><div class="does" data-i18n="t1.does">Searches the regulations and KOSHA guides, then answers with clause citations.</div><span class="chip ok" data-i18n="chip.works">Works today</span></div>
+      <div class="card task"><div class="ask" data-i18n="t2.ask">"Is this pump datasheet compliant with our specs?"</div><div class="does" data-i18n="t2.does">Finds the specs, reads the datasheet, compares the values and lists mismatches.</div><span class="chip muted" data-i18n="chip.planned">Planned</span></div>
+      <div class="card task"><div class="ask" data-i18n="t3.ask">"What changed between Rev B and Rev C?"</div><div class="does" data-i18n="t3.does">Gets both revisions, compares them and summarizes the changes.</div><span class="chip muted" data-i18n="chip.planned">Planned</span></div>
+      <div class="card task"><div class="ask" data-i18n="t4.ask">"Prepare review comments for this vendor document"</div><div class="does" data-i18n="t4.does">Checks it against the standards and drafts a comment sheet for you to approve.</div><span class="chip muted" data-i18n="chip.planned">Planned</span></div>
     </div>
   </div>
 </section>
 
 <section class="block alt" id="results">
   <div class="wrap">
-    <div class="kicker">Why trust it</div>
-    <h2>Measured on held-out questions.</h2>
-    <p class="sub">Tested on 40 bilingual questions about process-safety standards that were never used to tune the system.</p>
+    <div class="kicker" data-i18n="res.kicker">Why trust it</div>
+    <h2 data-i18n="res.h">Measured on held-out questions.</h2>
+    <p class="sub" data-i18n="res.sub">Tested on 40 bilingual questions about process-safety standards that were never used to tune the system.</p>
     <div class="grid g4">
-      <div class="card stat"><div class="num">34/34</div><div class="lbl">answerable questions with the right clause in the top 5 results</div></div>
-      <div class="card stat"><div class="num">16/16</div><div class="lbl">cross-language questions (Korean ↔ English) answered from the right clause</div></div>
-      <div class="card stat"><div class="num">6/6</div><div class="lbl">questions outside the documents correctly answered "not found" (1 false refusal)</div></div>
-      <div class="card stat"><div class="num">33/33</div><div class="lbl">answers faithful to their sources: no invented facts</div></div>
+      <div class="card stat"><div class="num">34/34</div><div class="lbl" data-i18n="s1">answerable questions with the right clause in the top 5 results</div></div>
+      <div class="card stat"><div class="num">16/16</div><div class="lbl" data-i18n="s2">cross-language questions (Korean ↔ English) answered from the right clause</div></div>
+      <div class="card stat"><div class="num">6/6</div><div class="lbl" data-i18n="s3">questions outside the documents correctly answered "not found" (1 false refusal)</div></div>
+      <div class="card stat"><div class="num">33/33</div><div class="lbl" data-i18n="s4">answers faithful to their sources: no invented facts</div></div>
     </div>
-    <p class="caveat">Caveat: a small test set, and the grading was checked by AI, not by a human expert.</p>
+    <p class="caveat" data-i18n="res.caveat">Caveat: a small test set, and the grading was checked by AI, not by a human expert.</p>
   </div>
 </section>
 
 <section class="final">
   <div class="wrap">
-    <h2>Ask your documents anything.</h2>
-    <p>Get answers with clause references, or an honest "not found".</p>
-    <a class="btn btn-primary" href="/chat">Start asking →</a>
+    <h2 data-i18n="final.h">Ask your documents anything.</h2>
+    <p data-i18n="final.p">Get answers with clause references, or an honest "not found".</p>
+    <a class="btn btn-primary" href="/chat" data-i18n="final.btn">Start asking →</a>
   </div>
 </section>
 
+<script src="/static/js/common.js"></script>
+<script src="/static/js/i18n.js"></script>
 <script>
-  // When an admin is signed in, say so in the nav instead of offering a sign-in
-  fetch("/api/admin/me", { credentials: "same-origin" }).then((r) => r.ok ? r.json() : null).then((me) => {
-    if (!me) return;
+  // When an admin is signed in, say so in the nav instead of offering a sign-in (again after a language switch)
+  let admin = null;
+  function showAdmin() {
+    if (!admin) return;
     const a = document.getElementById("adminLink");
-    a.innerHTML = `<span style="color:var(--ok)">●</span> Admin console · ${me.username.replace(/[<>&"']/g, "")}`;
-    a.title = "You are signed in as admin";
+    a.innerHTML = `<span style="color:var(--ok)">●</span> ${DA.esc(DA.t("admin.signedIn", { name: admin.username }))}`;
+    a.title = DA.t("admin.signedInTitle");
+  }
+  fetch("/api/admin/me", { credentials: "same-origin" }).then((r) => r.ok ? r.json() : null).then((me) => {
+    admin = me;
+    showAdmin();
   }).catch(() => {});
+  document.addEventListener("da:lang", showAdmin);
 </script>
 <footer>
-  <div class="wrap"><span>© DocAgent</span><span>DocAgent is a reference tool. It does not replace engineering judgment, legal advice or formal safety review.</span></div>
+  <div class="wrap"><span>© DocAgent</span><span data-i18n="footer.note">DocAgent is a reference tool. It does not replace engineering judgment, legal advice or formal safety review.</span></div>
 </footer>
 </body>
 </html>

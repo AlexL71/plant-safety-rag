@@ -69,7 +69,7 @@ function inline(text, passages) {
     .replace(/`([^`]+)`/g, "<code>$1</code>");
   return h.replace(/\[(\d+(?:\s*,\s*\d+)*)\]/g, (_, nums) => nums.split(/\s*,\s*/).map((n) =>
     passages && passages[n]
-      ? `<button type="button" class="cite" data-n="${n}" aria-label="Source ${n}">${n}</button>`
+      ? `<button type="button" class="cite" data-n="${n}" aria-label="${DA.t("cite.aria", { n })}">${n}</button>`
       : `<sup class="muted">${n}</sup>`).join(""));
 }
 
@@ -127,10 +127,10 @@ DA.Popover = class {
     clearTimeout(this.hideTimer);
     this.el.innerHTML = `
       <div class="pop-title">${DA.esc(p.title)}</div>
-      <div class="pop-meta">${DA.esc(p.clause_id)} · ${DA.pages(p)} · ${p.lang === "ko" ? "Korean" : "English"}</div>
+      <div class="pop-meta">${DA.esc(p.clause_id)} · ${DA.pages(p)} · ${DA.t(`lang.${p.lang === "ko" ? "ko" : "en"}`)}</div>
       <div class="pop-text">${DA.esc(p.text)}</div>
-      <div class="pop-foot"><span class="small muted">Source [${p.n}]</span>
-        <button class="btn btn-ghost btn-sm" type="button">Open in document →</button></div>`;
+      <div class="pop-foot"><span class="small muted">${DA.t("pop.source", { n: p.n })}</span>
+        <button class="btn btn-ghost btn-sm" type="button">${DA.t("pop.open")}</button></div>`;
     this.el.querySelector("button").onclick = () => { this.hide(); this.onOpen(p); };
     this.el.hidden = false;
     const r = anchor.getBoundingClientRect(), w = this.el.offsetWidth, h = this.el.offsetHeight;
@@ -168,11 +168,11 @@ DA.Viewer = class {
     this.backdrop.className = "viewer-backdrop";
     this.el = document.createElement("aside");
     this.el.className = "viewer";
-    this.el.setAttribute("aria-label", "Document viewer");
+    this.el.setAttribute("aria-label", DA.t("viewer.aria"));
     this.el.innerHTML = `
       <div class="viewer-head">
         <div><div class="v-title"></div><div class="v-meta"></div></div>
-        <button class="v-close" type="button" aria-label="Close">×</button>
+        <button class="v-close" type="button" aria-label="${DA.t("viewer.close")}">×</button>
       </div>
       <div class="viewer-tools"></div>
       <div class="viewer-body"></div>`;
@@ -189,7 +189,7 @@ DA.Viewer = class {
     const token = ++this.token;
     this.el.classList.add("open"); this.backdrop.classList.add("open");
     const body = this.el.querySelector(".viewer-body");
-    body.innerHTML = `<div class="muted small" style="display:flex;gap:10px;align-items:center"><div class="spinner"></div>Opening the document…</div>`;
+    body.innerHTML = `<div class="muted small" style="display:flex;gap:10px;align-items:center"><div class="spinner"></div>${DA.t("viewer.opening")}</div>`;
     let passage = null;
     if (chunk_id) passage = await DA.api(`/api/passages/${encodeURIComponent(chunk_id)}`);
     const docId = passage ? passage.doc_id : doc_id;
@@ -198,11 +198,11 @@ DA.Viewer = class {
 
     this.el.querySelector(".v-title").textContent = doc.title;
     this.el.querySelector(".v-meta").textContent = passage
-      ? `${passage.clause_id} · ${DA.pages(passage)} · ${doc.pages.length} pages`
-      : `${doc.pages.length} pages · ${doc.lang === "ko" ? "Korean" : "English"}`;
+      ? `${passage.clause_id} · ${DA.pages(passage)} · ${DA.t("viewer.pages", { n: doc.pages.length })}`
+      : `${DA.t("viewer.pages", { n: doc.pages.length })} · ${DA.t(`lang.${doc.lang === "ko" ? "ko" : "en"}`)}`;
     this.el.querySelector(".viewer-tools").innerHTML = passage
-      ? `<span class="chip accent">Outlined: the passage cited in the answer</span>`
-      : `<span class="chip muted">Whole document</span>`;
+      ? `<span class="chip accent">${DA.t("viewer.outlined")}</span>`
+      : `<span class="chip muted">${DA.t("viewer.whole")}</span>`;
 
     const blocks = passage ? groupBoxes(passage.boxes || []) : [];
     const pagesWithHl = new Set(blocks.map((b) => b.page));
@@ -213,7 +213,7 @@ DA.Viewer = class {
       div.className = "page";
       div.id = `vp-${n}`;
       div.style.aspectRatio = `${w} / ${h}`;
-      div.innerHTML = `<img alt="Page ${n}" loading="${pagesWithHl.has(n) || Math.abs(n - page) < 2 ? "eager" : "lazy"}"
+      div.innerHTML = `<img alt="${DA.t("viewer.pageAlt", { n })}" loading="${pagesWithHl.has(n) || Math.abs(n - page) < 2 ? "eager" : "lazy"}"
                          src="/api/docs/${encodeURIComponent(docId)}/pages/${n}.png"><span class="pno">${n}</span>`;
       for (const b of blocks.filter((b) => b.page === n)) {
         const pad = 3, hl = document.createElement("div");

@@ -25,6 +25,8 @@
 * { box-sizing: border-box; }
 [hidden] { display: none !important; }  /* class rules like .login { display: grid } must not override hidden */
 html, body { margin: 0; height: 100%; }
+/* Korean: break lines between words, not inside them */
+:lang(ko) body { word-break: keep-all; overflow-wrap: break-word; }
 body { font-family: var(--font); color: var(--ink); background: var(--bg); font-size: 15px; line-height: 1.6;
        -webkit-font-smoothing: antialiased; }
 a { color: var(--brand); text-decoration: none; }
@@ -107,6 +109,13 @@ h1, h2, h3 { line-height: 1.2; letter-spacing: -.02em; margin: 0; }
       box-shadow: 0 0 0 4px rgba(0, 163, 224, .12); pointer-events: none; }
 .hl.flash { animation: flash 1.4s ease-out 2; }
 @keyframes flash { 0% { box-shadow: 0 0 0 0 rgba(0, 163, 224, .55); } 100% { box-shadow: 0 0 0 14px rgba(0, 163, 224, 0); } }
+
+/* ---------- segmented switch (answer language, interface language) ---------- */
+.seg { display: inline-flex; padding: 3px; background: var(--line-2); border-radius: 999px; }
+.seg button { border: none; background: none; padding: 4px 12px; border-radius: 999px; font: inherit; font-weight: 600;
+              color: var(--ink-2); cursor: pointer; transition: background .15s, color .15s, box-shadow .15s; }
+.seg button:hover { color: var(--ink); }
+.seg button[aria-pressed="true"] { background: var(--surface); color: var(--brand); box-shadow: var(--shadow-1); }
 
 /* ---------- logo ---------- */
 .logo { height: 44px; display: block; }
