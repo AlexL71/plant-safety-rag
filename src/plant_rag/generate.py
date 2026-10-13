@@ -99,6 +99,9 @@ def call_llm_record(prompt: str, cfg: dict[str, Any], system: str | None = None)
     usage = resp.usage_metadata.model_dump(exclude_none=True) if resp.usage_metadata else {}
     if not text:
         log.warning("Empty answer from %s (finish_reason=%s)", llm["model"], finish)
+    elif finish and "MAX_TOKENS" in finish:
+        log.warning("Answer cut off by max_output_tokens (thinking tokens: %s); raise llm.max_output_tokens",
+                    usage.get("thoughts_token_count"))
 
     path.parent.mkdir(parents=True, exist_ok=True)
     record = {

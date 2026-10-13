@@ -76,7 +76,7 @@ api_key:
 llm:
   model: gemini-3.8-flash             # gemini-2.5-flash is closed to new keys; list models: python -m plant_rag.smoke_test --list-models
   temperature: 0.0
-  max_output_tokens: 2048
+  max_output_tokens: 8192             # includes "thinking" tokens; 2048 truncated 3 of 251 answers (thinking used ~1,900)
   thinking_level: null                # null = model default; or low / medium / high (less = faster, cheaper; minimal not supported)
 
 embedding:

@@ -212,3 +212,49 @@ python -m plant_rag.index
 python -m plant_rag.ask "안전밸브는 어떤 설비에 설치해야 하나요?"
 python -m plant_rag.ask "What must a hot work permit document?" --setup C --show-evidence
 ```
+
+---
+
+## Step 6: Measuring it (`evaluate.py`, notebooks 02, Phase 3)
+
+**The test set.** 60 questions in `eval/questions.jsonl`: 50 answerable (25 Korean, 25 English; 23 of them
+cross-language, e.g. a Korean question answered only by the US CFR) and 10 unanswerable but on-topic
+(e.g. SIL determination, LOPA, blast overpressure). Split 20 **dev** (used to make design choices) / 40 **test**
+(run once at the end). Each answerable question lists every chunk that states the answer ("gold chunks").
+Questions were drafted by AI agents that read the documents in full and verified by Claude against the full
+source text (not by a human; see the plan's decision log).
+
+**Metrics.**
+- *Recall@5*: is a gold chunk among the 5 passages given to the model? (If not, a correct answer is unlikely.)
+- *MRR@10*: how high the first gold chunk ranks (1.0 = always first).
+- *Refusals*: unanswerable questions correctly refused; answerable questions wrongly refused.
+- *Citations*: answers citing at least one gold chunk; share of citations that are gold chunks.
+- *Faithfulness / correctness* (0–2, `eval/faithfulness_rubric.md`): is every claim supported by the passages
+  shown; does the answer match the gold answer. Graded by Claude agents, spot-checked (20%) by a second session.
+
+**Results on the 40 test questions** (`notebooks/02_eval_analysis.ipynb`, figures in `docs/figures/`):
+
+| Setup | Recall@5 | Cross-language | MRR@10 | Correct / false refusals | Faithful / correct answers |
+|---|---|---|---|---|---|
+| A · BM25 | 18/34 | 0/16 | 0.40 | – | – |
+| B · Dense | 32/34 | 14/16 | 0.86 | – | – |
+| C · Hybrid | 23/34 | 5/16 | 0.52 | 6/6 · 10/34 | 24/24 · 22/24 |
+| D · Hybrid + rerank | 30/34 | 12/16 | 0.79 | 6/6 · 4/34 | 30/30 · 29/30 |
+| **E · D + translation** | **34/34** | **16/16** | **0.92** | **6/6 · 1/34** | **33/33 · 32/33** |
+
+**What it means.**
+- Same-language questions are easy for every setup (18/18). The whole difference is cross-language questions.
+- Adding keyword search to meaning search *hurts* cross-language questions unless the question is translated,
+  because keyword search only finds passages in the question's language.
+- The model almost never invents facts (faithfulness 2/2 for all 87 graded answers); errors are omissions.
+- E is the slowest (~23 s per question on the laptop CPU, mostly the reranker). Dense-only search is nearly as
+  good at finding passages and almost instant; E is better at ranking and at refusing.
+
+**Run:**
+
+```
+python -m plant_rag.evaluate --split dev --setups A,B,C,D,E --run dev_v2 --tune-threshold
+python -m plant_rag.evaluate --split test --setups A,B,C,D,E --run test_v1
+```
+
+Then open `notebooks/02_eval_analysis.ipynb`.

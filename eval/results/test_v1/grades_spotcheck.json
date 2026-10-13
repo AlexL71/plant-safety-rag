@@ -1,0 +1,104 @@
+[
+ {
+  "qid": "q003",
+  "setup": "C",
+  "faithfulness": 2,
+  "correctness": 2
+ },
+ {
+  "qid": "q003",
+  "setup": "D",
+  "faithfulness": 2,
+  "correctness": 2
+ },
+ {
+  "qid": "q006",
+  "setup": "E",
+  "faithfulness": 2,
+  "correctness": 1
+ },
+ {
+  "qid": "q008",
+  "setup": "D",
+  "faithfulness": 2,
+  "correctness": 2
+ },
+ {
+  "qid": "q008",
+  "setup": "E",
+  "faithfulness": 2,
+  "correctness": 2
+ },
+ {
+  "qid": "q009",
+  "setup": "E",
+  "faithfulness": 2,
+  "correctness": 2
+ },
+ {
+  "qid": "q014",
+  "setup": "D",
+  "faithfulness": 2,
+  "correctness": 1
+ },
+ {
+  "qid": "q014",
+  "setup": "E",
+  "faithfulness": 2,
+  "correctness": 2
+ },
+ {
+  "qid": "q016",
+  "setup": "C",
+  "faithfulness": 2,
+  "correctness": 2
+ },
+ {
+  "qid": "q016",
+  "setup": "E",
+  "faithfulness": 2,
+  "correctness": 2
+ },
+ {
+  "qid": "q020",
+  "setup": "D",
+  "faithfulness": 2,
+  "correctness": 2
+ },
+ {
+  "qid": "q027",
+  "setup": "D",
+  "faithfulness": 2,
+  "correctness": 2
+ },
+ {
+  "qid": "q031",
+  "setup": "D",
+  "faithfulness": 2,
+  "correctness": 2
+ },
+ {
+  "qid": "q036",
+  "setup": "C",
+  "faithfulness": 2,
+  "correctness": 2
+ },
+ {
+  "qid": "q042",
+  "setup": "C",
+  "faithfulness": 2,
+  "correctness": 2
+ },
+ {
+  "qid": "q047",
+  "setup": "D",
+  "faithfulness": 2,
+  "correctness": 2
+ },
+ {
+  "qid": "q050",
+  "setup": "E",
+  "faithfulness": 2,
+  "correctness": 2
+ }
+]
