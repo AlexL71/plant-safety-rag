@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 340 72" width="340" height="72">
+  <title>DocAgent logo (for dark or blue backgrounds)</title>
+  <rect x="4" y="4" width="64" height="64" rx="16" fill="#FFFFFF"/>
+  <path d="M26.9 20h-8v32h8M45.1 20h8v32h-8" fill="none" stroke="#1428A0" stroke-width="5.7" stroke-linecap="round" stroke-linejoin="round"/>
+  <circle cx="36" cy="36" r="5.7" fill="#00A3E0"/>
+  <g font-family="'Segoe UI', 'Helvetica Neue', Arial, sans-serif">
+    <text x="84" y="40" font-size="32" font-weight="600" fill="#FFFFFF" textLength="250" lengthAdjust="spacing">DOCAGENT</text>
+    <text x="85" y="61" font-size="12" fill="#C9D2FF" textLength="249" lengthAdjust="spacing">AI AGENT FOR EPC DOCUMENTS</text>
+  </g>
+</svg>

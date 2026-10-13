@@ -8,6 +8,7 @@ secrets/
 # --- Data and generated files (copyrighted or large) ---
 data/raw/
 data/processed/
+data/app/
 index/
 cache/
 private/
@@ -30,3 +31,6 @@ desktop.ini
 .DS_Store
 .vscode/
 .idea/
+
+# --- Local tool settings (machine-specific paths) ---
+.claude/

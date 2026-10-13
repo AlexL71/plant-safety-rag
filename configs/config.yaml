@@ -69,6 +69,20 @@ evaluate:
   answer_setups: [C, D, E]            # LLM answers only for these setups (cost); retrieval metrics for all
   k_eval: 10                          # retrieve this many per question for MRR@10
 
+web:                                  # DocAgent web app (python -m app.server)
+  host: 127.0.0.1                     # localhost only: not reachable from other machines
+  port: 8000
+  db_path: data/app/docagent.sqlite   # chats, reviews, settings (git-ignored)
+  admin_credentials: secrets/admin_credentials.json   # password hash only; create with: python -m app.auth
+  page_cache_dir: cache/pages         # rendered PDF pages (PNG)
+  page_zoom: 2.0                      # rendering scale (2 = sharp on high-DPI screens)
+  default_user_setup: E               # search setup for users until the admin changes it
+  max_chats_per_user: 50              # oldest chat is deleted when a browser creates the 51st
+  max_turns_per_chat: 50              # questions per chat
+  max_question_chars: 1000
+  history_turns: 3                    # earlier exchanges used to rewrite a follow-up question
+  admin_session_hours: 8
+
 api_key:
   env_var: GEMINI_API_KEY             # takes priority if set
   file: secrets/gemini_api_key.txt    # never printed, logged or committed

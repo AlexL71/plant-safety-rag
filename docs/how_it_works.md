@@ -258,3 +258,44 @@ python -m plant_rag.evaluate --split test --setups A,B,C,D,E --run test_v1
 ```
 
 Then open `notebooks/02_eval_analysis.ipynb`.
+
+---
+
+## Step 7: The DocAgent platform (`app/`, Phase 4)
+
+**What it is.** A small web platform with three pages, served by a Python web server (FastAPI) that reuses the
+pipeline above unchanged:
+
+- **Landing page** (`/`): what DocAgent is, which modules are built or planned, the measured results.
+- **Chat** (`/chat`): users ask questions in a chat. The answer shows only text with numbered citations.
+  *Hover* a number → a pop-up shows the exact passage. *Click* → a side panel opens the original PDF with the
+  passage outlined. Up to 50 chats per browser are kept (the oldest is removed), and follow-up questions work.
+- **Admin** (`/admin`, password): choose the search setup users get; review every answer next to all passages
+  the model saw and mark it correct / partly / incorrect; a test console for any setup; browse all documents.
+
+**How the pieces work.**
+- *Follow-up questions.* "그럼 파열판은?" means nothing on its own. Before searching, Gemini rewrites it into a full
+  question using the last 3 exchanges ("…파열판을 반드시 설치해야 하는 설비 또는 조건은?"). One small cached call.
+- *Live progress.* An answer takes ~20 s on the laptop, so the server streams each step (translating, searching,
+  re-reading, writing) to the browser as it happens (Server-Sent Events).
+- *Outlining the passage in the PDF.* When the PDFs are read (Step 1), every line's position on the page is kept.
+  Each chunk stores the boxes of its lines. The page is drawn as an image (PyMuPDF, cached), and the browser draws
+  an outline over the lines of the cited chunk, merged into one block per column.
+- *Users without accounts.* A random id in a browser cookie owns that browser's chats. Clearing browser data
+  starts fresh.
+- *Admin login.* The password is never stored, only a PBKDF2 hash (310,000 rounds) in `secrets/`. A login creates a
+  random session token (8 h) in an HttpOnly cookie. Users cannot call any admin endpoint.
+- *One question at a time.* The reranker uses all CPU cores, so questions are processed one after another.
+- *Storage.* One SQLite file (`data/app/docagent.sqlite`) for chats, reviews and settings.
+- *Safety.* Runs on `127.0.0.1` only. Answer text is escaped before display (the model cannot inject HTML).
+
+**Settings:** `configs/config.yaml`, section `web` (port, chat limits, history turns, session hours).
+
+**Run:**
+
+```
+python -m app.auth --username admin   # once: set the admin password
+python -m app.server                  # http://127.0.0.1:8000
+```
+
+Direct links: `/chat?q=<question>` asks a question in a new chat; `/chat?source=<chunk id>` opens a passage.
