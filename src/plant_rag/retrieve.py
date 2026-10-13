@@ -93,8 +93,15 @@ class Retriever:
             log.info("Reranker loaded in %.1fs", time.perf_counter() - t0)
         return self._reranker
 
-    def rerank(self, query: str, idxs: list[int]) -> list[float]:
-        pairs = [(query, passage_text(self.chunks[i], self.with_header)) for i in idxs]
+    def rerank(self, query: str | dict[str, str], idxs: list[int]) -> list[float]:
+        """Score passages. With a {lang: question} dict, each passage is scored against the question in its own
+        language (the reranker scores cross-language pairs far lower; see setup E)."""
+        def q_for(i: int) -> str:
+            if isinstance(query, str):
+                return query
+            return query.get(self.chunks[i]["lang"], next(iter(query.values())))
+
+        pairs = [(q_for(i), passage_text(self.chunks[i], self.with_header)) for i in idxs]
         scores = self.reranker.predict(pairs, batch_size=int(self.cfg["reranker"]["batch_size"]),
                                        show_progress_bar=False)
         return [float(s) for s in scores]
@@ -121,21 +128,42 @@ class Retriever:
 
     # ------------------------------------------------------------ main entry
     def search(self, query: str, setup: str | None = None, k: int | None = None) -> list[Hit]:
-        """Return the top-k hits for `query` under `setup` (A/B/C/D). Stage times go to self.timings."""
+        """Return the top-k hits for `query` under `setup` (A–E). Stage times go to self.timings.
+
+        Setup E ("translate": true) also translates the question into the other corpus language (one cached
+        LLM call), runs BM25 and dense search for both versions, and reranks each passage against the
+        question in the passage's language.
+        """
         setup = setup or self.rcfg["default_setup"]
         s = self.rcfg["setups"][setup]
         k = k or int(self.rcfg["final_k"])
         self.timings = {}
         lists: dict[str, list[tuple[int, float]]] = {}
 
-        if s["bm25"]:
+        queries = {"orig": query}
+        rerank_query: str | dict[str, str] = query
+        if s.get("translate"):
+            from plant_rag.generate import detect_lang, translate_query
+
             t0 = time.perf_counter()
-            lists["bm25"] = self.bm25_search(query, int(self.rcfg["bm25_top_k"]))
-            self.timings["bm25"] = time.perf_counter() - t0
-        if s["dense"]:
-            t0 = time.perf_counter()
-            lists["dense"] = self.dense_search(query, int(self.rcfg["dense_top_k"]))
-            self.timings["dense"] = time.perf_counter() - t0  # includes the query-embedding API call
+            q_lang = detect_lang(query)
+            other = "en" if q_lang == "ko" else "ko"
+            translated = translate_query(query, other, self.cfg)
+            self.timings["translate"] = time.perf_counter() - t0
+            queries["tr"] = translated
+            rerank_query = {q_lang: query, other: translated}
+            self.last_translation = translated
+
+        for tag, q in queries.items():
+            suffix = "" if tag == "orig" else "_tr"
+            if s["bm25"]:
+                t0 = time.perf_counter()
+                lists["bm25" + suffix] = self.bm25_search(q, int(self.rcfg["bm25_top_k"]))
+                self.timings["bm25"] = self.timings.get("bm25", 0.0) + time.perf_counter() - t0
+            if s["dense"]:
+                t0 = time.perf_counter()
+                lists["dense" + suffix] = self.dense_search(q, int(self.rcfg["dense_top_k"]))
+                self.timings["dense"] = self.timings.get("dense", 0.0) + time.perf_counter() - t0  # incl. query embedding
         if not lists:
             raise ValueError(f"Setup {setup} enables neither BM25 nor dense search")
 
@@ -151,7 +179,7 @@ class Retriever:
         if s["rerank"]:
             cands = self._rerank_pool(ranked, lists)
             t0 = time.perf_counter()
-            scores = self.rerank(query, cands) if cands else []
+            scores = self.rerank(rerank_query, cands) if cands else []
             self.timings["rerank"] = time.perf_counter() - t0
             order = sorted(zip(cands, scores), key=lambda x: -x[1])
             hits = [Hit(self.chunks[i], sc, {n: m[i] for n, m in rank_of.items() if i in m} | {"rerank": r},

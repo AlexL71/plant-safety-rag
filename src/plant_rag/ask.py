@@ -43,7 +43,7 @@ def main() -> None:
     t_search = time.perf_counter() - t0
     stage_times = dict(retriever.timings)
 
-    ans = answer(args.question, hits, cfg)
+    ans = answer(args.question, hits, cfg, args.setup)
     n_snip = int(cfg["answer"]["snippet_chars"])
 
     print("\n" + ans.text + "\n")

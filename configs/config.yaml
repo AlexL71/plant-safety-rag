@@ -34,12 +34,16 @@ index:
   passage_header: true                # index "title | law part/chapter | clause heading" + chunk text
 
 retrieval:
-  default_setup: D
+  default_setup: E                    # best on the dev split (2026-10-13); see eval/results/dev_v2
   setups:                             # ablation (Phase 3): A=BM25, B=dense, C=hybrid, D=hybrid+rerank
     A: {bm25: true,  dense: false, rerank: false}
     B: {bm25: false, dense: true,  rerank: false}
     C: {bm25: true,  dense: true,  rerank: false}
     D: {bm25: true,  dense: true,  rerank: true}
+    E: {bm25: true,  dense: true,  rerank: true, translate: true}   # D + question translated to the other language
+  query_translation:
+    model: null                       # null = same as llm.model
+    thinking_level: low               # translation needs little reasoning ("minimal" is not supported by gemini-3.8-flash)
   bm25_top_k: 50
   dense_top_k: 50
   rrf_k: 60                           # RRF constant: score = sum 1/(rrf_k + rank)
@@ -55,13 +59,14 @@ reranker:
   num_threads: 0                      # CPU threads for PyTorch; 0 = all (PyTorch's default uses only half)
 
 answer:
-  min_rerank_score: 0.01              # refuse without calling the LLM below this; tune on dev split (Phase 3).
-                                      # Kept low: the reranker scores Korean question vs English passage far lower
-                                      # (0.02) than the same question in English (0.997)
+  min_rerank_score:                   # refuse without calling the LLM if the best reranker score is below this
+    E: 0.15                           # tuned on dev (2026-10-13): answerable min 0.367, unanswerable max 0.075
+    D: 0.01                           # D scores cross-language pairs very low (0.02 for a correct passage)
+    default: 0.0
   snippet_chars: 160                  # length of the source snippet shown under an answer
 
 evaluate:
-  answer_setups: [C, D]               # LLM answers only for these setups (cost); retrieval metrics for all
+  answer_setups: [C, D, E]            # LLM answers only for these setups (cost); retrieval metrics for all
   k_eval: 10                          # retrieve this many per question for MRR@10
 
 api_key:
@@ -72,7 +77,7 @@ llm:
   model: gemini-3.8-flash             # gemini-2.5-flash is closed to new keys; list models: python -m plant_rag.smoke_test --list-models
   temperature: 0.0
   max_output_tokens: 2048
-  thinking_level: null                # null = model default; or minimal / low / medium / high (less = faster, cheaper)
+  thinking_level: null                # null = model default; or low / medium / high (less = faster, cheaper; minimal not supported)
 
 embedding:
   model: gemini-embedding-001

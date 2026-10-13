@@ -153,8 +153,13 @@ search code refuses to run on a mismatched index. Only new or changed chunks are
    from 0 to 1. More accurate, but slow, so it only sees 10 candidates.
 4. The top 5 go to the answer step.
 
-The four **setups** for the Phase 3 comparison switch stages on/off: A = BM25 only, B = dense only,
-C = hybrid (RRF), D = hybrid + reranker (default).
+The **setups** for the Phase 3 comparison switch stages on/off: A = BM25 only, B = dense only,
+C = hybrid (RRF), D = hybrid + reranker, **E = D + query translation (default)**.
+
+**Setup E (added after the first dev run).** Gemini translates the question into the other corpus
+language (Korean ↔ English; one small cached call, ~3 s). BM25 and dense search run for both versions,
+and the reranker scores every passage against the question *in the passage's language*. On the dev
+questions, cross-language Recall@5 went from 3/7 (D) to 7/7 (E), and false refusals from 3/16 to 0/16.
 
 **Two lessons from the hand test.**
 - *Cross-language and RRF.* For a Korean question whose answer is only in the English CFR, BM25 finds
@@ -187,12 +192,13 @@ temperature 0) with strict rules:
 The `[n]` numbers are then mapped back to document, clause and page for display.
 
 **Refusing ("not found").** Two layers:
-1. *Before the API call:* if the best reranker score is below `answer.min_rerank_score` (0.01), we
-   refuse without calling the model. No cost and no risk of a made-up answer.
+1. *Before the API call:* if the best reranker score is below `answer.min_rerank_score`, we refuse
+   without calling the model. No cost and no risk of a made-up answer.
 2. *By the model:* if the passages don't contain the answer.
 
-The threshold is low on purpose (cross-language scores are low, see Step 4). It will be tuned on the
-dev questions in Phase 3.
+The threshold is set per setup on the dev questions only: **E: 0.15**. On dev, every answerable
+question's best passage scored ≥ 0.367 and every unanswerable one ≤ 0.075, so 0.15 sits in the gap.
+(D keeps 0.01: without translation its cross-language scores are too low for a useful threshold.)
 
 **Hand test (Phase 2):** 10 questions (5 Korean, 5 English, including cross-language and 2 questions the
 documents cannot answer). All 10 behaved as expected; report in `eval/results/phase2_hand_test.md`.

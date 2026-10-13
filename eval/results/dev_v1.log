@@ -1,0 +1,100 @@
+[1/80] A q001 gold@1  (4.4s)
+[2/80] A q004 gold@1  (0.0s)
+[3/80] A q007 gold@1  (0.0s)
+[4/80] A q013 gold@-  (0.0s)
+[5/80] A q015 gold@-  (0.0s)
+[6/80] A q017 gold@-  (0.0s)
+[7/80] A q019 gold@-  (0.0s)
+[8/80] A q035 gold@-  (0.0s)
+[9/80] A q037 gold@1  (0.0s)
+[10/80] A q038 gold@-  (0.0s)
+[11/80] A q039 gold@1  (0.0s)
+[12/80] A q041 gold@1  (0.0s)
+[13/80] A q043 gold@3  (0.0s)
+[14/80] A q045 gold@3  (0.0s)
+[15/80] A q046 gold@1  (0.0s)
+[16/80] A q049 gold@-  (0.0s)
+[17/80] A q051 gold@-  (0.0s)
+[18/80] A q053 gold@-  (0.0s)
+[19/80] A q056 gold@-  (0.0s)
+[20/80] A q058 gold@-  (0.0s)
+[21/80] B q001 gold@1  (1.5s)
+[22/80] B q004 gold@1  (0.4s)
+[23/80] B q007 gold@1  (0.5s)
+[24/80] B q013 gold@1  (0.5s)
+[25/80] B q015 gold@3  (0.5s)
+[26/80] B q017 gold@1  (0.5s)
+[27/80] B q019 gold@1  (0.5s)
+[28/80] B q035 gold@1  (0.5s)
+[29/80] B q037 gold@1  (0.5s)
+[30/80] B q038 gold@1  (0.5s)
+[31/80] B q039 gold@1  (0.5s)
+[32/80] B q041 gold@1  (0.5s)
+[33/80] B q043 gold@1  (0.5s)
+[34/80] B q045 gold@2  (0.5s)
+[35/80] B q046 gold@1  (0.5s)
+[36/80] B q049 gold@1  (0.5s)
+[37/80] B q051 gold@-  (0.5s)
+[38/80] B q053 gold@-  (0.5s)
+[39/80] B q056 gold@-  (0.5s)
+[40/80] B q058 gold@-  (0.5s)
+[41/80] C q001 gold@1  (0.0s)
+[42/80] C q004 gold@1  (0.0s)
+[43/80] C q007 gold@1  (0.0s)
+[44/80] C q013 gold@3  (0.0s)
+[45/80] C q015 gold@9 refused (0.0s)
+[46/80] C q017 gold@- refused (0.0s)
+[47/80] C q019 gold@- refused (0.0s)
+[48/80] C q035 gold@- refused (0.0s)
+[49/80] C q037 gold@1  (0.0s)
+[50/80] C q038 gold@-  (0.0s)
+[51/80] C q039 gold@1  (0.0s)
+[52/80] C q041 gold@1  (0.0s)
+[53/80] C q043 gold@1  (0.0s)
+[54/80] C q045 gold@3  (0.0s)
+[55/80] C q046 gold@1  (0.0s)
+[56/80] C q049 gold@4  (0.0s)
+[57/80] C q051 gold@- refused (0.0s)
+[58/80] C q053 gold@- refused (0.0s)
+[59/80] C q056 gold@- refused (0.0s)
+[60/80] C q058 gold@- refused (0.0s)
+[61/80] D q001 gold@1  (53.7s)
+[62/80] D q004 gold@1  (11.4s)
+[63/80] D q007 gold@1  (12.9s)
+[64/80] D q013 gold@1  (12.4s)
+[65/80] D q015 gold@9  (11.9s)
+[66/80] D q017 gold@1  (11.8s)
+[67/80] D q019 gold@6 refused (12.4s)
+[68/80] D q035 gold@10 refused (11.8s)
+[69/80] D q037 gold@1  (11.6s)
+[70/80] D q038 gold@1  (12.4s)
+[71/80] D q039 gold@1  (12.3s)
+[72/80] D q041 gold@1  (12.3s)
+[73/80] D q043 gold@1  (11.6s)
+[74/80] D q045 gold@1  (12.7s)
+[75/80] D q046 gold@1  (12.4s)
+[76/80] D q049 gold@6 refused (11.7s)
+[77/80] D q051 gold@- refused (12.7s)
+[78/80] D q053 gold@- refused (13.4s)
+[79/80] D q056 gold@- refused (13.8s)
+[80/80] D q058 gold@- refused (11.9s)
+{"setup": "A", "questions": 20, "recall@5": "9/16 = 56%", "recall@5_cross_lingual": "0/7 = 0%", "mrr@10": "0.479", "median_search_s": "0.0"}
+{"setup": "B", "questions": 20, "recall@5": "16/16 = 100%", "recall@5_cross_lingual": "7/7 = 100%", "mrr@10": "0.927", "median_search_s": "0.5"}
+{"setup": "C", "questions": 20, "recall@5": "11/16 = 69%", "recall@5_cross_lingual": "2/7 = 29%", "mrr@10": "0.564", "median_search_s": "0.0", "correct_refusals": "4/4 = 100%", "false_refusals": "4/16 = 25%", "answers_citing_gold": "11/12 = 92%", "citation_precision": "15/21 = 71%", "median_llm_s": "5.0"}
+{"setup": "D", "questions": 20, "recall@5": "12/16 = 75%", "recall@5_cross_lingual": "3/7 = 43%", "mrr@10": "0.784", "median_search_s": "12.4", "correct_refusals": "4/4 = 100%", "false_refusals": "3/16 = 19%", "answers_citing_gold": "12/13 = 92%", "citation_precision": "18/21 = 86%", "median_llm_s": "4.4"}
+
+threshold sweep (setup D, dev):
+  0.0    correct refusals    4/4  false refusals   3/16  net 1
+  0.001  correct refusals    4/4  false refusals   3/16  net 1
+  0.003  correct refusals    4/4  false refusals   3/16  net 1
+  0.005  correct refusals    4/4  false refusals   3/16  net 1
+  0.01   correct refusals    4/4  false refusals   3/16  net 1
+  0.02   correct refusals    4/4  false refusals   3/16  net 1
+  0.03   correct refusals    4/4  false refusals   3/16  net 1
+  0.05   correct refusals    4/4  false refusals   3/16  net 1
+  0.1    correct refusals    4/4  false refusals   4/16  net 0
+  0.2    correct refusals    4/4  false refusals   4/16  net 0
+  0.3    correct refusals    4/4  false refusals   5/16  net -1
+  0.5    correct refusals    4/4  false refusals   6/16  net -2
+
+Results: C:\Users\dadab\OneDrive\Рабочий стол\plant-safety-rag\eval\results\dev_v1

@@ -120,6 +120,25 @@ def call_llm(prompt: str, cfg: dict[str, Any], system: str | None = None) -> str
     return call_llm_record(prompt, cfg, system)["text"]
 
 
+# ------------------------------------------------------------------ query translation (setup E)
+
+TRANSLATE_PROMPT = """Translate this question about industrial process safety into {lang_name}.
+Keep numbers, units, equipment tags, abbreviations (PSM, HAZOP, MOC, PSSR, LEL ...) and regulation names.
+Use the technical terms an engineer would use in {lang_name}. Output only the translated question.
+
+Question: {question}"""
+
+
+def translate_query(question: str, target_lang: str, cfg: dict[str, Any]) -> str:
+    """Translate a question with the LLM (cached like every LLM call). Used so that keyword search and the
+    reranker can compare the question with passages in the other language."""
+    tcfg = cfg["retrieval"]["query_translation"]
+    sub = {**cfg, "llm": {**cfg["llm"], "model": tcfg.get("model") or cfg["llm"]["model"],
+                          "thinking_level": tcfg.get("thinking_level"), "max_output_tokens": 512}}
+    prompt = TRANSLATE_PROMPT.format(lang_name=LANG_NAME[target_lang], question=question)
+    return call_llm_record(prompt, sub)["text"].strip()
+
+
 # ------------------------------------------------------------------ answering
 
 @dataclass
@@ -174,12 +193,21 @@ def is_refusal(text: str) -> bool:
     return any(t.startswith(s.rstrip(".")) for s in NOT_FOUND.values())
 
 
-def answer(question: str, hits: list[Hit], cfg: dict[str, Any]) -> Answer:
+def refusal_threshold(cfg: dict[str, Any], setup: str | None = None) -> float:
+    """`answer.min_rerank_score` is a number, or a {setup: number} map (tuned per setup on the dev split)."""
+    t = cfg["answer"]["min_rerank_score"]
+    if isinstance(t, dict):
+        setup = setup or cfg["retrieval"]["default_setup"]
+        return float(t.get(setup, t.get("default", 0.0)))
+    return float(t)
+
+
+def answer(question: str, hits: list[Hit], cfg: dict[str, Any], setup: str | None = None) -> Answer:
     lang = detect_lang(question)
     if not hits:
         return Answer(question, lang, NOT_FOUND[lang], True, "no_hits")
     top = hits[0].rerank_score
-    threshold = float(cfg["answer"]["min_rerank_score"])
+    threshold = refusal_threshold(cfg, setup)
     if top is not None and top < threshold:
         return Answer(question, lang, NOT_FOUND[lang], True, "low_score", evidence=hits)
 

@@ -68,7 +68,7 @@ def evaluate_one(q: dict, setup: str, retriever: Retriever, cfg: dict[str, Any],
     }
     if with_answer:
         final_k = int(cfg["retrieval"]["final_k"])
-        ans = answer(q["question"], hits[:final_k], cfg)
+        ans = answer(q["question"], hits[:final_k], cfg, setup)
         cited_ids = [hits[n - 1].chunk["chunk_id"] for n in ans.cited]
         row |= {
             "answer": ans.text, "refused": ans.refused, "refusal_reason": ans.refusal_reason,
@@ -160,7 +160,7 @@ def main() -> None:
     if args.tune_threshold:
         if args.split != "dev":
             sys.exit("Tune the refusal threshold on the dev split only (test numbers must stay unseen).")
-        cfg["answer"]["min_rerank_score"] = 0.0
+        cfg["answer"]["min_rerank_score"] = 0.0  # applies to every setup
     qpath = Path(args.questions) if Path(args.questions).is_absolute() else REPO_ROOT / args.questions
     questions = load_questions(qpath, args.split)
     if args.limit:
@@ -209,11 +209,15 @@ def main() -> None:
     for s in summary:
         print(json.dumps(s, ensure_ascii=False))
     if args.tune_threshold:
-        sweep = threshold_sweep([r for r in rows if r["setup"] == "D"])
-        write_csv(run_dir / "threshold_sweep.csv", sweep)
-        print("\nthreshold sweep (setup D, dev):")
-        for s in sweep:
-            print(f"  {s['threshold']:<6} correct refusals {s['correct_refusals']:>6}  false refusals {s['false_refusals']:>6}  net {s['net']}")
+        for setup in setups:
+            if not cfg["retrieval"]["setups"][setup]["rerank"] or setup not in answer_setups:
+                continue
+            sweep = threshold_sweep([r for r in rows if r["setup"] == setup])
+            write_csv(run_dir / f"threshold_sweep_{setup}.csv", sweep)
+            print(f"\nthreshold sweep (setup {setup}, dev):")
+            for s in sweep:
+                print(f"  {s['threshold']:<6} correct refusals {s['correct_refusals']:>6}  "
+                      f"false refusals {s['false_refusals']:>6}  net {s['net']}")
     print(f"\nResults: {run_dir}")
 
 
