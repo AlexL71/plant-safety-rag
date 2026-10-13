@@ -1,4 +1,4 @@
-"""SQLite storage for chats, messages, admin reviews, settings and admin sessions.
+"""SQLite storage for chats, messages, admin reviews, safety notices, settings and admin sessions.
 
 One file (`web.db_path`), safe to use from several threads (one connection + a lock).
 Users are anonymous: a random id in a browser cookie owns their chats.
@@ -29,7 +29,15 @@ CREATE TABLE IF NOT EXISTS reviews (
 CREATE TABLE IF NOT EXISTS settings (key TEXT PRIMARY KEY, value TEXT NOT NULL);
 CREATE TABLE IF NOT EXISTS admin_sessions (
     token TEXT PRIMARY KEY, username TEXT NOT NULL, expires REAL NOT NULL);
+CREATE TABLE IF NOT EXISTS notices (
+    id TEXT PRIMARY KEY, user_id TEXT NOT NULL, title TEXT NOT NULL, lang TEXT NOT NULL,
+    template TEXT NOT NULL, content TEXT NOT NULL, status TEXT NOT NULL DEFAULT 'draft',
+    version INTEGER NOT NULL DEFAULT 1, approved_by TEXT, approved_at REAL, approved_version INTEGER,
+    source_message_id INTEGER, created REAL NOT NULL, updated REAL NOT NULL);
+CREATE INDEX IF NOT EXISTS notices_user ON notices(user_id, updated);
 """
+
+NOTICE_STATUSES = {"draft", "approved"}
 
 VERDICTS = {"correct", "partial", "incorrect"}
 
@@ -109,6 +117,22 @@ class Store:
                 pending = None
         return pairs
 
+    def get_message(self, message_id: int, user_id: str | None = None) -> dict[str, Any] | None:
+        """One message; with `user_id`, only if that user owns the chat."""
+        sql = "SELECT m.* FROM messages m JOIN chats c ON c.id=m.chat_id WHERE m.id=?"
+        args: tuple = (message_id,)
+        if user_id:
+            sql += " AND c.user_id=?"
+            args = (message_id, user_id)
+        rows = self._q(sql, args)
+        if not rows:
+            return None
+        r = rows[0]
+        return {**dict(r), "payload": json.loads(r["payload"]) if r["payload"] else None}
+
+    def update_payload(self, message_id: int, payload: dict[str, Any]) -> None:
+        self._x("UPDATE messages SET payload=? WHERE id=?", (json.dumps(payload, ensure_ascii=False), message_id))
+
     def count_turns(self, chat_id: str) -> int:
         return self._q("SELECT COUNT(*) AS n FROM messages WHERE chat_id=? AND role='user'", (chat_id,))[0]["n"]
 
@@ -157,6 +181,63 @@ class Store:
             "refused": one("SELECT COUNT(*) FROM messages WHERE role='assistant' AND json_extract(payload,'$.refused')=1"),
             "reviews": {r[0]: r[1] for r in self._q("SELECT verdict, COUNT(*) FROM reviews GROUP BY verdict")},
         }
+
+    # ---------------------------------------------------------------- safety notices
+    @staticmethod
+    def _notice(r: sqlite3.Row) -> dict[str, Any]:
+        return {**dict(r), "content": json.loads(r["content"])}
+
+    def create_notice(self, user_id: str, title: str, lang: str, template: str, content: dict[str, Any],
+                      source_message_id: int | None, max_per_user: int) -> dict[str, Any]:
+        now, nid = time.time(), uuid.uuid4().hex
+        with self.lock:
+            old = self.db.execute("SELECT id FROM notices WHERE user_id=? ORDER BY updated DESC LIMIT -1 OFFSET ?",
+                                  (user_id, max(0, max_per_user - 1))).fetchall()
+            for row in old:
+                self.db.execute("DELETE FROM notices WHERE id=?", (row["id"],))
+            self.db.execute("INSERT INTO notices (id, user_id, title, lang, template, content, status, version, "
+                            "source_message_id, created, updated) VALUES (?,?,?,?,?,?, 'draft', 1, ?,?,?)",
+                            (nid, user_id, title, lang, template, json.dumps(content, ensure_ascii=False),
+                             source_message_id, now, now))
+            self.db.commit()
+        return self.get_notice(nid)
+
+    def get_notice(self, notice_id: str) -> dict[str, Any] | None:
+        rows = self._q("SELECT * FROM notices WHERE id=?", (notice_id,))
+        return self._notice(rows[0]) if rows else None
+
+    def list_notices(self, user_id: str | None = None, status: str | None = None) -> list[dict[str, Any]]:
+        where, args = [], []
+        if user_id:
+            where.append("user_id=?")
+            args.append(user_id)
+        if status in NOTICE_STATUSES:
+            where.append("status=?")
+            args.append(status)
+        sql = ("SELECT id, user_id, title, lang, template, status, version, approved_by, approved_at, created, updated "
+               "FROM notices" + (" WHERE " + " AND ".join(where) if where else "") + " ORDER BY updated DESC")
+        return [dict(r) for r in self._q(sql, tuple(args))]
+
+    def update_notice(self, notice_id: str, title: str, template: str, content: dict[str, Any]) -> dict[str, Any]:
+        """Any edit makes the notice a draft again (a new version needs a new approval)."""
+        self._x("UPDATE notices SET title=?, template=?, content=?, status='draft', version=version+1, updated=? "
+                "WHERE id=?", (title, template, json.dumps(content, ensure_ascii=False), time.time(), notice_id))
+        return self.get_notice(notice_id)
+
+    def set_notice_template(self, notice_id: str, template: str) -> None:
+        """Layout only (no text change): keeps the approval."""
+        self._x("UPDATE notices SET template=?, updated=? WHERE id=?", (template, time.time(), notice_id))
+
+    def approve_notice(self, notice_id: str, reviewer: str) -> dict[str, Any]:
+        self._x("UPDATE notices SET status='approved', approved_by=?, approved_at=?, approved_version=version "
+                "WHERE id=?", (reviewer, time.time(), notice_id))
+        return self.get_notice(notice_id)
+
+    def delete_notice(self, notice_id: str, user_id: str | None = None) -> None:
+        if user_id:
+            self._x("DELETE FROM notices WHERE id=? AND user_id=?", (notice_id, user_id))
+        else:
+            self._x("DELETE FROM notices WHERE id=?", (notice_id,))
 
     # ---------------------------------------------------------------- settings
     def get_setting(self, key: str, default: str) -> str:

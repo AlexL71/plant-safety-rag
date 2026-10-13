@@ -3,11 +3,11 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title data-i18n="home.pageTitle">DocAgent · The AI agent for EPC project documents</title>
-<meta name="description" content="Ask your project documents anything. Answers with clause references, or an honest 'not found'.">
-<link rel="icon" href="/brand/docagent_icon.svg" type="image/svg+xml">
+<title data-i18n="home.pageTitle">SafetyAgent · AI safety assistant for industrial sites</title>
+<meta name="description" content="Ask Korean and US safety rules in Korean or English. Answers, visuals, job plans and printable notices, every line linked to the clause it came from.">
+<link rel="icon" href="/brand/safetyagent_icon.svg" type="image/svg+xml">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
-<link rel="stylesheet" href="/static/css/docagent.css">
+<link rel="stylesheet" href="/static/css/safetyagent.css">
 <style>
   body { background: var(--surface); }
   .wrap { max-width: 1160px; margin: 0 auto; padding: 0 24px; }
@@ -19,54 +19,66 @@
   nav.top .cta { margin-left: auto; display: flex; gap: 10px; align-items: center; }
   nav.top .ui-lang { font-size: 12.5px; }
 
-  .hero { position: relative; overflow: hidden; padding: 84px 0 72px;
+  .hero { position: relative; overflow: hidden; padding: 80px 0 72px;
           background: radial-gradient(1100px 480px at 85% -10%, var(--brand-50), transparent 65%),
-                      radial-gradient(700px 360px at -5% 110%, var(--accent-50), transparent 60%); }
+                      radial-gradient(700px 360px at -5% 110%, var(--safety-50), transparent 60%); }
   .hero .wrap { display: grid; grid-template-columns: 1.05fr .95fr; gap: 56px; align-items: center; }
   .eyebrow { display: inline-flex; gap: 8px; align-items: center; font-size: 13px; font-weight: 600; color: var(--brand);
              background: var(--surface); border: 1px solid var(--brand-100); border-radius: 999px; padding: 5px 12px; }
-  .eyebrow i { width: 7px; height: 7px; border-radius: 50%; background: var(--accent); display: inline-block; }
-  .hero h1 { font-size: clamp(36px, 5vw, 58px); margin: 20px 0 18px; font-weight: 800; letter-spacing: -.035em; }
+  .eyebrow i { width: 7px; height: 7px; border-radius: 50%; background: var(--safety); display: inline-block; }
+  .hero h1 { font-size: clamp(36px, 5vw, 56px); margin: 20px 0 18px; font-weight: 800; letter-spacing: -.035em; }
   .hero h1 em { font-style: normal; color: var(--brand); }
-  .hero p.lead { font-size: 18.5px; color: var(--ink-2); max-width: 560px; margin: 0 0 30px; }
+  .hero p.lead { font-size: 18.5px; color: var(--ink-2); max-width: 570px; margin: 0 0 30px; }
   .hero .actions { display: flex; gap: 12px; flex-wrap: wrap; }
   .hero .trust { margin-top: 26px; display: flex; gap: 18px; flex-wrap: wrap; font-size: 13.5px; color: var(--ink-2); }
-  .hero .trust span::before { content: "✓"; color: var(--accent); font-weight: 800; margin-right: 6px; }
+  .hero .trust span::before { content: "✓"; color: var(--ok); font-weight: 800; margin-right: 6px; }
 
+  /* hero preview: a chat answer with a limits visual + a printed notice */
   .mock { position: relative; }
-  .mock .chat { padding: 22px 22px 46px; border-radius: 20px; box-shadow: var(--shadow-2); }
-  .mock .q { margin-left: auto; width: fit-content; max-width: 85%; background: var(--brand); color: #fff; padding: 10px 14px;
+  .mock .chat { padding: 20px 20px 34px; border-radius: 20px; box-shadow: var(--shadow-2); }
+  .mock .q { margin-left: auto; width: fit-content; max-width: 85%; background: var(--brand); color: #fff; padding: 9px 14px;
              border-radius: 14px 14px 4px 14px; font-size: 14px; }
-  .mock .a { margin-top: 14px; font-size: 14px; line-height: 1.7; color: var(--ink); }
+  .mock .a { margin-top: 12px; font-size: 13.5px; line-height: 1.65; color: var(--ink); }
   .mock .a .cite { cursor: default; }
-  .mock .src { position: relative; margin: -28px -18px 0 auto; width: 62%; padding: 14px; border-radius: 16px;
-               box-shadow: var(--shadow-2); background: var(--surface); border: 1px solid var(--line); }
-  .mock .src .t { font-size: 12px; font-weight: 700; } .mock .src .m { font-size: 11px; color: var(--muted); }
-  .mock .src .doc { margin-top: 8px; background: var(--bg); border-radius: 8px; padding: 10px; display: grid; gap: 6px; }
-  .mock .src .bar { height: 6px; border-radius: 3px; background: var(--line); }
-  .mock .src .hlbox { border: 2px solid var(--accent); background: rgba(0,163,224,.10); border-radius: 6px; padding: 6px; display: grid; gap: 5px; }
-  .mock .src .hlbox .bar { background: #b9e6f7; }
+  .mock .vis { margin-top: 10px; padding: 12px 14px; }
+  .mock .vis-title { font-size: 13.5px; } .mock .lim-bar { margin-bottom: 18px; }
+  .mock .poster { position: absolute; right: -18px; bottom: -46px; width: 190px; background: #fff; border-radius: 10px;
+                  box-shadow: var(--shadow-2); overflow: hidden; border: 1px solid var(--line); transform: rotate(3deg); }
+  .mock .poster .st { height: 9px; background: repeating-linear-gradient(135deg, #111 0 9px, var(--safety) 9px 18px); }
+  .mock .poster .pb { padding: 10px 12px 12px; display: grid; gap: 5px; }
+  .mock .poster .pt { font-weight: 900; font-size: 15px; color: #0b1340; line-height: 1.15; }
+  .mock .poster .pl { display: flex; gap: 6px; align-items: center; font-size: 10.5px; font-weight: 600; }
+  .mock .poster .pl b { width: 16px; height: 16px; border-radius: 4px; background: var(--safety); display: grid; place-items: center; font-size: 10px; flex: none; }
+  .mock .poster .pf { display: flex; justify-content: space-between; align-items: end; margin-top: 4px; }
+  .mock .poster .qr { width: 34px; height: 34px; background: conic-gradient(#111 25%, #fff 0 50%, #111 0 75%, #fff 0) 0 0 / 8px 8px; border-radius: 3px; }
+  .mock .poster .ok { font-size: 9.5px; font-weight: 700; color: var(--ok); border: 1px solid var(--ok); border-radius: 99px; padding: 1px 6px; }
 
   section.block { padding: 88px 0; }
   section.alt { background: var(--bg); }
   .kicker { font-size: 13px; font-weight: 700; color: var(--accent); letter-spacing: .08em; text-transform: uppercase; }
   .block h2 { font-size: clamp(28px, 3.4vw, 38px); margin: 10px 0 14px; font-weight: 800; }
-  .block p.sub { color: var(--ink-2); font-size: 17px; max-width: 720px; margin: 0; }
+  .block p.sub { color: var(--ink-2); font-size: 17px; max-width: 740px; margin: 0; }
   .grid { display: grid; gap: 18px; margin-top: 40px; }
   .g3 { grid-template-columns: repeat(3, 1fr); } .g4 { grid-template-columns: repeat(4, 1fr); }
   .feature { padding: 24px; } .feature h3 { font-size: 17px; margin: 14px 0 6px; } .feature p { margin: 0; color: var(--ink-2); font-size: 14.5px; }
-  .ico { width: 42px; height: 42px; border-radius: 12px; background: var(--brand-50); color: var(--brand); display: grid; place-items: center; }
-  .ico svg { width: 22px; height: 22px; }
+  .ico { width: 42px; height: 42px; border-radius: 12px; background: var(--brand-50); color: var(--brand); display: grid; place-items: center; font-size: 20px; }
+  .ico.amber { background: var(--safety-50); }
+  .flow { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-top: 40px; counter-reset: f; }
+  .flow .st { padding: 22px; position: relative; }
+  .flow .st::before { counter-increment: f; content: counter(f); position: absolute; top: -14px; left: 20px; width: 28px; height: 28px;
+                      border-radius: 50%; background: var(--brand); color: #fff; font-weight: 800; display: grid; place-items: center; font-size: 13px; }
+  .flow .st h3 { font-size: 16px; margin: 6px 0 6px; } .flow .st p { margin: 0; color: var(--ink-2); font-size: 14px; }
   .module { padding: 22px; display: flex; flex-direction: column; gap: 10px; }
   .module .chip { align-self: flex-start; }
   .module h3 { font-size: 16.5px; } .module p { margin: 0; color: var(--ink-2); font-size: 14px; flex: 1; }
   .module.planned { background: transparent; box-shadow: none; border-style: dashed; }
-  .tasks { margin-top: 36px; display: grid; gap: 12px; }
-  .task { display: grid; grid-template-columns: 1fr 1.4fr auto; gap: 20px; align-items: center; padding: 18px 22px; }
-  .task .ask { font-weight: 600; } .task .does { color: var(--ink-2); font-size: 14.5px; }
+  .tries { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 26px; }
+  .tries a { border: 1px solid var(--line); background: var(--surface); border-radius: 999px; padding: 8px 14px; font-size: 14px; color: var(--ink); }
+  .tries a:hover { border-color: var(--brand-100); text-decoration: none; box-shadow: var(--shadow-1); }
   .stat { padding: 26px 22px; } .stat .num { font-size: 40px; font-weight: 800; color: var(--brand); letter-spacing: -.03em; }
   .stat .lbl { color: var(--ink-2); font-size: 14px; margin-top: 4px; }
   .caveat { margin-top: 18px; font-size: 13px; color: var(--muted); }
+  .corpus { margin-top: 26px; display: flex; gap: 10px; flex-wrap: wrap; }
   .final { text-align: center; padding: 84px 0; background: var(--brand); color: #fff; }
   .final h2 { color: #fff; } .final p { color: #c9d2ff; margin: 12px auto 28px; max-width: 560px; font-size: 17px; }
   .final .btn-primary { background: #fff; color: var(--brand); box-shadow: none; }
@@ -74,9 +86,8 @@
   footer .wrap { display: flex; gap: 20px; justify-content: space-between; flex-wrap: wrap; }
 
   @media (max-width: 920px) {
-    .hero .wrap, .g3, .g4 { grid-template-columns: 1fr; }
-    .mock .src { width: auto; margin: 14px 0 0; }
-    .task { grid-template-columns: 1fr; gap: 6px; }
+    .hero .wrap, .g3, .g4, .flow { grid-template-columns: 1fr; }
+    .mock .poster { position: relative; right: 0; bottom: 0; margin: 14px 0 0 auto; }
     nav.top .links { display: none; }
   }
 </style>
@@ -84,39 +95,48 @@
 <body>
 <nav class="top">
   <div class="wrap">
-    <a href="/" aria-label="DocAgent home"><img class="logo" src="/brand/docagent_logo.svg" alt="DocAgent"></a>
-    <div class="links"><a href="#what" data-i18n="nav.product">Product</a><a href="#modules" data-i18n="nav.modules">Modules</a><a href="#results" data-i18n="nav.results">Results</a></div>
+    <a href="/" aria-label="SafetyAgent home"><img class="logo" src="/brand/safetyagent_logo.svg" alt="SafetyAgent"></a>
+    <div class="links"><a href="#features" data-i18n="nav.features">Features</a><a href="#how" data-i18n="nav.how">How it works</a>
+      <a href="#results" data-i18n="nav.results">Results</a><a href="/notices" data-i18n="nav.notices">Safety notices</a></div>
     <div class="cta">
-      <div class="seg ui-lang" role="group" aria-label="Interface language" data-i18n-attr="aria-label:ui.aria"><button type="button" data-ui-lang="en">EN</button><button type="button" data-ui-lang="ko">한국어</button></div><a class="btn btn-ghost btn-sm" href="/admin" id="adminLink" data-i18n="nav.admin">Admin</a><a class="btn btn-primary btn-sm" href="/chat" data-i18n="nav.start">Start asking</a></div>
+      <div class="seg ui-lang" role="group" aria-label="Interface language" data-i18n-attr="aria-label:ui.aria"><button type="button" data-ui-lang="en">EN</button><button type="button" data-ui-lang="ko">한국어</button></div>
+      <a class="btn btn-ghost btn-sm" href="/admin" id="adminLink" data-i18n="nav.admin">Admin</a><a class="btn btn-primary btn-sm" href="/chat" data-i18n="nav.start">Start asking</a></div>
   </div>
 </nav>
 
 <header class="hero">
   <div class="wrap">
     <div>
-      <span class="eyebrow" data-i18n="hero.eyebrow"><i></i>AI agent for EPC documents · Korean &amp; English</span>
-      <h1 data-i18n="hero.title">The AI agent for <em>EPC project documents</em>.</h1>
-      <p class="lead" data-i18n="hero.lead">DocAgent brings your project documents into one place and lets engineers ask questions, check documents
-        and prepare reviews in plain language, with every answer linked to the exact clause it came from.</p>
+      <span class="eyebrow" data-i18n="hero.eyebrow"><i></i>AI safety assistant · Korean &amp; US rules</span>
+      <h1 data-i18n="hero.title">Safety rules, answered with <em>the exact clause</em>.</h1>
+      <p class="lead" data-i18n="hero.lead">SafetyAgent answers workplace-safety questions from Korean and US rules, explains them with visuals,
+        plans the checks for a job and drafts notices you can print. Every line links to the clause it came from, and numbers are checked
+        against the source before you see them.</p>
       <div class="actions">
-        <a class="btn btn-primary" href="/chat" data-i18n="hero.ask">Ask your documents →</a>
+        <a class="btn btn-primary" href="/chat" data-i18n="hero.ask">Ask a safety question →</a>
         <a class="btn btn-ghost" href="#results" data-i18n="hero.see">See the measured results</a>
       </div>
-      <div class="trust" data-i18n="hero.trust"><span>Clause-level citations</span><span>Honest "not found"</span><span>Korean ↔ English</span></div>
+      <div class="trust" data-i18n="hero.trust"><span>Clause-level citations</span><span>Numbers checked against sources</span><span>Korean ↔ English</span></div>
     </div>
     <div class="mock" aria-hidden="true">
       <div class="card chat">
-        <div class="q" data-i18n="mock.q">How long must completed work permits be kept?</div>
-        <div class="a" data-i18n="mock.a">Work permits are kept for <strong>1 year</strong>; confined-space entry permits for
-          <strong>3 years</strong> <span class="cite">2</span>. Permit records stay on site for at least 30 days after
-          the work, then are archived for monitoring and audits <span class="cite">1</span>.</div>
+        <div class="q" data-i18n="mock.q">What air is safe for confined-space work?</div>
+        <div class="a" data-i18n="mock.a">Oxygen must be at least 18% and below 23.5%, with CO₂ below 1.5%, CO below 30 ppm and
+          H₂S below 10 ppm <span class="cite">1</span> <span class="cite">2</span>.</div>
+        <div class="vis">
+          <div class="vis-head"><span class="vis-ico">📏</span><div><div class="vis-title" data-i18n="mock.vt">Safe air in confined spaces</div>
+            <div class="vis-kind" data-i18n="mock.vk">Limits</div></div><span class="chip ok vis-checked">✓</span></div>
+          <div class="lim"><div class="lim-head"><span class="lbl" data-i18n="mock.o2">Oxygen</span><span class="val">18 – 23.5 %</span></div>
+            <div class="lim-bar"><div class="zone ok" style="left:57%;width:17%"></div>
+              <span class="tick" style="left:57%"><i></i><b>18</b></span><span class="tick" style="left:74%"><i></i><b>23.5</b></span></div></div>
+        </div>
       </div>
-      <div class="src">
-        <div class="t">안전작업허가에 관한 기술지원규정</div>
-        <div class="m" data-i18n="mock.meta">5.5 허가서의 보존 · p. 8 · Korean</div>
-        <div class="doc"><div class="bar" style="width:90%"></div><div class="bar" style="width:70%"></div>
-          <div class="hlbox"><div class="bar" style="width:95%"></div><div class="bar" style="width:80%"></div></div>
-          <div class="bar" style="width:85%"></div></div>
+      <div class="poster">
+        <div class="st"></div>
+        <div class="pb"><div class="pt" data-i18n="mock.pt">Confined space: test the air first</div>
+          <div class="pl"><b>1</b><span data-i18n="mock.p1">Measure O₂ and gas before entry</span></div>
+          <div class="pl"><b>2</b><span data-i18n="mock.p2">Keep an attendant outside</span></div>
+          <div class="pf"><span class="ok" data-i18n="mock.pok">✓ Approved</span><span class="qr"></span></div></div>
       </div>
     </div>
   </div>
@@ -125,82 +145,95 @@
 <section class="block" id="problem">
   <div class="wrap">
     <div class="kicker" data-i18n="problem.kicker">The problem</div>
-    <h2 data-i18n="problem.h">The answer is somewhere in thousands of documents.</h2>
-    <p class="sub" data-i18n="problem.sub">On an EPC project, the answer to an engineering question is spread across specifications, standards,
-      regulations, datasheets and vendor documents and their revisions, often in more than one language. Engineers lose
-      hours finding the right clause, and a missed requirement costs money and safety.</p>
+    <h2 data-i18n="problem.h">The rule exists. Finding it, explaining it and posting it takes hours.</h2>
+    <p class="sub" data-i18n="problem.sub">Site safety depends on the Occupational Safety and Health Act, the safety rules, KOSHA guides and, on
+      international projects, OSHA standards. A supervisor needs the exact requirement before work starts; workers need it in plain words,
+      sometimes in another language. Missing one requirement costs lives and, under Korean law, can make the company liable.</p>
   </div>
 </section>
 
-<section class="block alt" id="what">
+<section class="block alt" id="features">
   <div class="wrap">
-    <div class="kicker" data-i18n="what.kicker">What DocAgent does</div>
-    <h2 data-i18n="what.h">An agent, not just a chatbot.</h2>
-    <p class="sub" data-i18n="what.sub">A chatbot answers one question. An agent plans several steps and uses tools: it searches the documents,
-      reads the right clauses, compares them and prepares a result.</p>
+    <div class="kicker" data-i18n="feat.kicker">What SafetyAgent does</div>
+    <h2 data-i18n="feat.h">One assistant: ask, see, plan, post.</h2>
+    <p class="sub" data-i18n="feat.sub">An agent, not just a chatbot: it decides which tool fits the request, searches the rules, writes the
+      result and checks it before you see it.</p>
     <div class="grid g3">
-      <div class="card feature"><div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M9 11l3 3 8-8"/><path d="M20 12v6a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h9"/></svg></div>
-        <h3 data-i18n="f1.h">Answers with proof</h3><p data-i18n="f1.p">Every statement cites the document, clause and page. Hover a number to read the passage; click to see it outlined in the original.</p></div>
-      <div class="card feature"><div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v6"/><path d="M12 17h.01"/></svg></div>
-        <h3 data-i18n="f2.h">"Not found" instead of guessing</h3><p data-i18n="f2.p">When the documents don't cover the question, DocAgent says so, and shows the closest passages it checked.</p></div>
-      <div class="card feature"><div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 5h8M8 3v2M5 9c1.5 3 4 5 7 6"/><path d="M11 9c-1 3-3 6-6 8"/><path d="M13 21l4-10 4 10M14.5 18h5"/></svg></div>
-        <h3 data-i18n="f3.h">Works across languages</h3><p data-i18n="f3.p">Ask in Korean and get the answer from an English standard, or the other way round.</p></div>
-      <div class="card feature"><div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M10 13a5 5 0 0 0 7.5.5l3-3a5 5 0 0 0-7-7l-1.7 1.7"/><path d="M14 11a5 5 0 0 0-7.5-.5l-3 3a5 5 0 0 0 7 7l1.7-1.7"/></svg></div>
-        <h3 data-i18n="f4.h">Works with your existing system</h3><p data-i18n="f4.p">Designed to connect to your CDE or document management system. You don't have to replace it.</p></div>
-      <div class="card feature"><div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c1.5-4 4.5-6 8-6s6.5 2 8 6"/></svg></div>
-        <h3 data-i18n="f5.h">A person stays in control</h3><p data-i18n="f5.p">The agent prepares comments, checks and status suggestions, and a person approves them. Approvals are formal project records.</p></div>
-      <div class="card feature"><div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 3v18h18"/><path d="M7 15l4-4 3 3 5-6"/></svg></div>
-        <h3 data-i18n="f6.h">Measured, not assumed</h3><p data-i18n="f6.p">Search methods compared on a bilingual test set; answers graded for faithfulness to their sources.</p></div>
+      <div class="card feature"><div class="ico">💬</div><h3 data-i18n="f1.h">Answers with proof</h3><p data-i18n="f1.p">Every statement cites the document, clause and page. Hover a number to read the clause; click to see it outlined in the original PDF.</p></div>
+      <div class="card feature"><div class="ico">📊</div><h3 data-i18n="f2.h">Explained as a visual</h3><p data-i18n="f2.p">Procedures become step flows, requirements become checklists, limits are drawn on a scale, deadlines on a timeline.</p></div>
+      <div class="card feature"><div class="ico">⚖️</div><h3 data-i18n="f3.h">Korea vs US side by side</h3><p data-i18n="f3.p">Ask in Korean and get the OSHA rule, or compare both countries' requirements in one table.</p></div>
+      <div class="card feature"><div class="ico amber">🧰</div><h3 data-i18n="f4.h">Plan a job</h3><p data-i18n="f4.p">Describe tomorrow's work: the agent finds the hazards, searches each one and returns permits, controls, checks, PPE and a TBM briefing.</p></div>
+      <div class="card feature"><div class="ico amber">📄</div><h3 data-i18n="f5.h">Notices you can print</h3><p data-i18n="f5.p">Posters, leaflets, messenger cards and TBM sheets, with QR codes to the clause and a second language for foreign workers. A person approves before posting.</p></div>
+      <div class="card feature"><div class="ico">🛡</div><h3 data-i18n="f6.h">Checked, or not shown</h3><p data-i18n="f6.p">Every line needs a source, and every number must appear in that source. If the documents don't cover a question, the answer is "not found".</p></div>
     </div>
+    <div class="tries"><a href="/chat?q=%EB%B0%80%ED%8F%90%EA%B3%B5%EA%B0%84%20%EC%A0%81%EC%A0%95%EA%B3%B5%EA%B8%B0%20%EA%B8%B0%EC%A4%80%EC%9D%84%20%EA%B7%B8%EB%9E%98%ED%94%84%EB%A1%9C%20%EB%B3%B4%EC%97%AC%EC%A4%98">📊 밀폐공간 적정공기 기준을 그래프로 보여줘</a>
+      <a href="/chat?q=Compare%20Korea%20and%20the%20US%3A%20from%20what%20height%20is%20fall%20protection%20required%3F">⚖️ Korea vs US: fall protection height</a>
+      <a href="/chat?q=We%20will%20weld%20inside%20a%20tank%20tomorrow.%20What%20must%20we%20prepare%3F&amp;mode=task_plan">🧰 Welding inside a tank tomorrow</a>
+      <a href="/chat?q=%EC%A7%80%EA%B2%8C%EC%B0%A8%20%EC%95%88%EC%A0%84%20%ED%8F%AC%EC%8A%A4%ED%84%B0%EB%A5%BC%20%EB%A7%8C%EB%93%A4%EC%96%B4%20%EC%A4%98&amp;mode=notice">📄 지게차 안전 포스터를 만들어 줘</a></div>
   </div>
 </section>
 
-<section class="block" id="modules">
+<section class="block" id="how">
+  <div class="wrap">
+    <div class="kicker" data-i18n="how.kicker">How it works</div>
+    <h2 data-i18n="how.h">Four steps, all visible while it works.</h2>
+    <div class="flow">
+      <div class="card st"><h3 data-i18n="s1.h">Understand</h3><p data-i18n="s1.p">A short model call decides what you need: an answer, a visual, a comparison, a job plan or a notice.</p></div>
+      <div class="card st"><h3 data-i18n="s2.h">Search</h3><p data-i18n="s2.p">Keyword and meaning search over 29 documents in both languages, then a reranker reads the best passages.</p></div>
+      <div class="card st"><h3 data-i18n="s3.h">Write</h3><p data-i18n="s3.p">The model writes only from those passages and cites each one. Job plans search every hazard separately.</p></div>
+      <div class="card st"><h3 data-i18n="s4.h">Check</h3><p data-i18n="s4.p">Lines without a source or with a number the source doesn't contain are removed. Notices wait for a person's approval.</p></div>
+    </div>
+    <div class="corpus" id="corpus"><span class="chip" data-i18n="corp.1">Occupational Safety and Health Act (KR)</span><span class="chip" data-i18n="corp.2">Safety rule, 674 articles (KR)</span>
+      <span class="chip" data-i18n="corp.3">Risk assessment guideline (KR)</span><span class="chip" data-i18n="corp.4">16 KOSHA guides</span>
+      <span class="chip accent" data-i18n="corp.5">9 OSHA standards (US)</span><span class="chip accent" data-i18n="corp.6">OSHA PSM booklet (US)</span></div>
+  </div>
+</section>
+
+<section class="block alt" id="modules">
   <div class="wrap">
     <div class="kicker" data-i18n="mod.kicker">Modules</div>
-    <h2 data-i18n="mod.h">One platform, built step by step.</h2>
+    <h2 data-i18n="mod.h">Built and measured first. Cameras next.</h2>
     <p class="sub" data-i18n="mod.sub">Built modules work and were evaluated. Planned modules are on the roadmap and not available yet.</p>
     <div class="grid g3">
-      <div class="card module"><span class="chip ok" data-i18n="chip.built">Built</span><h3>DocAgent Ask</h3><p data-i18n="m1.p">Ask in Korean or English, get an answer with clause-level citations, or "not found".</p></div>
-      <div class="card module"><span class="chip ok" data-i18n="chip.core">Built · core</span><h3>DocAgent Search</h3><p data-i18n="m2.p">Find any document or clause across all sources and languages.</p></div>
-      <div class="card module planned"><span class="chip muted" data-i18n="chip.planned">Planned</span><h3>DocAgent Library</h3><p data-i18n="m3.p">One register of all project documents, connected to SharePoint, Aconex, ProjectWise or shared folders.</p></div>
-      <div class="card module planned"><span class="chip muted" data-i18n="chip.planned">Planned</span><h3>DocAgent Check</h3><p data-i18n="m4.p">Check a datasheet or vendor document against specs and standards, and list mismatches.</p></div>
-      <div class="card module planned"><span class="chip muted" data-i18n="chip.planned">Planned</span><h3>DocAgent Flow</h3><p data-i18n="m5.p">Track reviews, approvals and revisions; draft comment sheets for approval.</p></div>
-    </div>
-    <div class="tasks">
-      <div class="card task"><div class="ask" data-i18n="t1.ask">"Where must a relief valve be installed?"</div><div class="does" data-i18n="t1.does">Searches the regulations and KOSHA guides, then answers with clause citations.</div><span class="chip ok" data-i18n="chip.works">Works today</span></div>
-      <div class="card task"><div class="ask" data-i18n="t2.ask">"Is this pump datasheet compliant with our specs?"</div><div class="does" data-i18n="t2.does">Finds the specs, reads the datasheet, compares the values and lists mismatches.</div><span class="chip muted" data-i18n="chip.planned">Planned</span></div>
-      <div class="card task"><div class="ask" data-i18n="t3.ask">"What changed between Rev B and Rev C?"</div><div class="does" data-i18n="t3.does">Gets both revisions, compares them and summarizes the changes.</div><span class="chip muted" data-i18n="chip.planned">Planned</span></div>
-      <div class="card task"><div class="ask" data-i18n="t4.ask">"Prepare review comments for this vendor document"</div><div class="does" data-i18n="t4.does">Checks it against the standards and drafts a comment sheet for you to approve.</div><span class="chip muted" data-i18n="chip.planned">Planned</span></div>
+      <div class="card module"><span class="chip ok" data-i18n="chip.built">Built</span><h3>Ask</h3><p data-i18n="m1.p">Cited answers in Korean or English, across both countries' rules, or an honest "not found".</p></div>
+      <div class="card module"><span class="chip ok" data-i18n="chip.built">Built</span><h3>Visualize · Compare</h3><p data-i18n="m2.p">Step flows, checklists, limit scales, timelines and Korea-vs-US tables, every element cited and checked.</p></div>
+      <div class="card module"><span class="chip ok" data-i18n="chip.built">Built</span><h3>Plan · Notices</h3><p data-i18n="m3.p">Job plans with a TBM briefing, and printable notices with QR codes, second language and approval.</p></div>
+      <div class="card module planned"><span class="chip muted" data-i18n="chip.planned">Planned</span><h3>Camera watch</h3><p data-i18n="m4.p">PPE and danger-zone detection on site cameras, with every alert linked to the rule it breaks.</p></div>
+      <div class="card module planned"><span class="chip muted" data-i18n="chip.planned">Planned</span><h3>Site photo review</h3><p data-i18n="m5.p">Upload a photo of a work area and get the visible hazards with the rules that apply.</p></div>
+      <div class="card module planned"><span class="chip muted" data-i18n="chip.planned">Planned</span><h3>Danger anticipation</h3><p data-i18n="m6.p">A video model that warns before an accident happens, measured by how many seconds of warning it gives.</p></div>
     </div>
   </div>
 </section>
 
-<section class="block alt" id="results">
+<section class="block" id="results">
   <div class="wrap">
     <div class="kicker" data-i18n="res.kicker">Why trust it</div>
-    <h2 data-i18n="res.h">Measured on held-out questions.</h2>
-    <p class="sub" data-i18n="res.sub">Tested on 40 bilingual questions about process-safety standards that were never used to tune the system.</p>
-    <div class="grid g4">
-      <div class="card stat"><div class="num">34/34</div><div class="lbl" data-i18n="s1">answerable questions with the right clause in the top 5 results</div></div>
-      <div class="card stat"><div class="num">16/16</div><div class="lbl" data-i18n="s2">cross-language questions (Korean ↔ English) answered from the right clause</div></div>
-      <div class="card stat"><div class="num">6/6</div><div class="lbl" data-i18n="s3">questions outside the documents correctly answered "not found" (1 false refusal)</div></div>
-      <div class="card stat"><div class="num">33/33</div><div class="lbl" data-i18n="s4">answers faithful to their sources: no invented facts</div></div>
+    <h2 data-i18n="res.h">Measured on questions it never saw.</h2>
+    <p class="sub" data-i18n="res.sub">Bilingual questions written and verified against the documents, never used to tune the system.</p>
+    <div class="grid g4" id="stats">
+      <div class="card stat"><div class="num" id="st1">–</div><div class="lbl" data-i18n="s1">answerable questions with the right clause in the top 5 results</div></div>
+      <div class="card stat"><div class="num" id="st2">–</div><div class="lbl" data-i18n="s2">cross-language questions (Korean ↔ English) found</div></div>
+      <div class="card stat"><div class="num" id="st3">–</div><div class="lbl" data-i18n="s3">questions outside the documents correctly answered "not found"</div></div>
+      <div class="card stat"><div class="num" id="st4">–</div><div class="lbl" data-i18n="s4">requests routed to the right tool by the agent</div></div>
     </div>
-    <p class="caveat" data-i18n="res.caveat">Caveat: a small test set, and the grading was checked by AI, not by a human expert.</p>
+    <p class="caveat" data-i18n="res.caveat">Caveat: small test sets; questions and grading were checked by AI, not by a human safety expert.</p>
   </div>
 </section>
 
 <section class="final">
   <div class="wrap">
-    <h2 data-i18n="final.h">Ask your documents anything.</h2>
-    <p data-i18n="final.p">Get answers with clause references, or an honest "not found".</p>
+    <h2 data-i18n="final.h">Work safely, with the rule in hand.</h2>
+    <p data-i18n="final.p">Answers with clause references, visuals, job plans and notices, or an honest "not found".</p>
     <a class="btn btn-primary" href="/chat" data-i18n="final.btn">Start asking →</a>
   </div>
 </section>
 
+<footer>
+  <div class="wrap"><span>© SafetyAgent</span><span data-i18n="footer.note">SafetyAgent is a reference tool. It does not replace a safety professional, legal advice or your site's formal safety procedures.</span></div>
+</footer>
 <script src="/static/js/common.js"></script>
 <script src="/static/js/i18n.js"></script>
+<script src="/static/js/results.js"></script>
 <script>
   // When an admin is signed in, say so in the nav instead of offering a sign-in (again after a language switch)
   let admin = null;
@@ -215,9 +248,11 @@
     showAdmin();
   }).catch(() => {});
   document.addEventListener("da:lang", showAdmin);
+  // Measured results (filled from js/results.js, written by the evaluation)
+  const R = window.SA_RESULTS || {};
+  for (const [id, v] of Object.entries({ st1: R.recall5, st2: R.cross, st3: R.refusals, st4: R.router })) {
+    if (v) document.getElementById(id).textContent = v;
+  }
 </script>
-<footer>
-  <div class="wrap"><span>© DocAgent</span><span data-i18n="footer.note">DocAgent is a reference tool. It does not replace engineering judgment, legal advice or formal safety review.</span></div>
-</footer>
 </body>
 </html>

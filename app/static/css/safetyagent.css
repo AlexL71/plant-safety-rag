@@ -1,4 +1,5 @@
-/* DocAgent design system: brand navy + cyan accent, calm neutrals, one type family (Pretendard: KO + Latin). */
+/* SafetyAgent design system: brand navy + cyan accent + safety amber, calm neutrals, one type family
+   (Pretendard: KO + Latin). */
 :root {
   --brand: #1428a0;
   --brand-700: #0f1f7d;
@@ -16,6 +17,7 @@
   --ok: #0f8a4a;   --ok-50: #e7f6ee;
   --warn: #b26b00; --warn-50: #fdf3e2;
   --bad: #c0362c;  --bad-50: #fcebea;
+  --safety: #ffb81c; --safety-50: #fff6dd; --safety-ink: #7a5200;   /* helmet/signage amber: highlights only */
   --radius: 14px;
   --radius-sm: 9px;
   --shadow-1: 0 1px 2px rgba(14, 20, 48, .06), 0 1px 1px rgba(14, 20, 48, .04);
@@ -121,3 +123,66 @@ h1, h2, h3 { line-height: 1.2; letter-spacing: -.02em; margin: 0; }
 .logo { height: 44px; display: block; }
 .logo-sm { height: 38px; }
 .icon-logo { width: 30px; height: 30px; display: block; }
+
+/* ---------- visual explanations & task plans (js/visuals.js) ---------- */
+.vis { margin-top: 14px; border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface); padding: 16px 18px; }
+.vis-head { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; }
+.vis-ico { width: 36px; height: 36px; border-radius: 10px; background: var(--brand-50); color: var(--brand); display: grid;
+           place-items: center; flex: none; font-size: 18px; }
+.vis-ico svg { width: 20px; height: 20px; }
+.vis-title { font-weight: 700; font-size: 15px; line-height: 1.3; }
+.vis-kind { font-size: 12px; color: var(--muted); }
+.vis-checked { margin-left: auto; }
+.vis .det { font-size: 13px; color: var(--ink-2); margin-top: 2px; }
+.vis-steps { list-style: none; margin: 0; padding: 0; display: grid; gap: 0; }
+.vis-steps li { display: grid; grid-template-columns: 30px 1fr; gap: 12px; position: relative; padding-bottom: 14px; }
+.vis-steps li:not(:last-child)::before { content: ""; position: absolute; left: 14px; top: 30px; bottom: 2px; width: 2px; background: var(--brand-100); }
+.vis-steps .num { width: 30px; height: 30px; border-radius: 50%; background: var(--brand); color: #fff; display: grid;
+                  place-items: center; font-weight: 700; font-size: 13px; }
+.vis-steps .lbl { font-weight: 600; padding-top: 4px; }
+.vis-check { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.vis-check label { display: flex; gap: 10px; align-items: flex-start; cursor: pointer; padding: 6px 8px; border-radius: 8px; }
+.vis-check label:hover { background: var(--bg); }
+.vis-check input { position: absolute; opacity: 0; pointer-events: none; }
+.vis-check .box { width: 18px; height: 18px; border: 2px solid var(--line); border-radius: 5px; flex: none; margin-top: 3px;
+                  display: grid; place-items: center; transition: background .15s, border-color .15s; }
+.vis-check input:checked + .box { background: var(--ok); border-color: var(--ok); }
+.vis-check input:checked + .box::after { content: "✓"; color: #fff; font-size: 12px; font-weight: 800; }
+.vis-check input:checked ~ span .lbl { color: var(--muted); text-decoration: line-through; }
+.vis-check .det { display: block; }
+.vis-compare-wrap { overflow-x: auto; }
+.vis-compare { width: 100%; border-collapse: collapse; font-size: 14px; }
+.vis-compare th, .vis-compare td { text-align: left; vertical-align: top; padding: 10px 12px; border-bottom: 1px solid var(--line-2); }
+.vis-compare thead th { font-size: 13px; color: var(--ink-2); background: var(--bg); }
+.vis-compare tbody th { font-weight: 600; width: 24%; color: var(--ink); }
+.vis-compare .flag { display: inline-block; font-size: 10.5px; font-weight: 800; letter-spacing: .04em; padding: 1px 6px;
+                     border-radius: 5px; background: var(--brand-50); color: var(--brand); margin-right: 4px; }
+.vis-compare .flag.us { background: var(--accent-50); color: #00739e; }
+.vis-limits { display: grid; gap: 18px; }
+.lim-head { display: flex; gap: 8px; align-items: baseline; flex-wrap: wrap; margin-bottom: 8px; }
+.lim-head .lbl { font-weight: 600; } .lim-head .val { font-weight: 700; color: var(--ok); font-variant-numeric: tabular-nums; }
+.lim-bar { position: relative; height: 14px; border-radius: 7px; background: repeating-linear-gradient(135deg, var(--bad-50) 0 6px, #f8dcda 6px 12px);
+           margin: 0 4px 22px; }
+.lim-bar .zone { position: absolute; top: 0; bottom: 0; border-radius: 7px; }
+.lim-bar .zone.ok { background: var(--ok); opacity: .85; }
+.lim-bar .tick { position: absolute; top: -4px; transform: translateX(-50%); display: grid; justify-items: center; }
+.lim-bar .tick i { width: 2px; height: 22px; background: var(--ink); border-radius: 1px; }
+.lim-bar .tick b { font-size: 11.5px; font-weight: 700; color: var(--ink); margin-top: 1px; font-variant-numeric: tabular-nums; }
+.lim-legend { display: flex; gap: 8px; align-items: center; font-size: 12px; color: var(--muted); }
+.lim-legend .sw { width: 14px; height: 10px; border-radius: 3px; display: inline-block; margin-left: 6px; }
+.lim-legend .sw.ok { background: var(--ok); } .lim-legend .sw.bad { background: #f3c4c0; }
+.vis-intervals { display: grid; gap: 12px; }
+.iv-lbl { font-weight: 600; font-size: 14px; margin-bottom: 4px; }
+.iv-bar { position: relative; height: 26px; background: var(--line-2); border-radius: 8px; overflow: hidden; }
+.iv-bar .fill { position: absolute; inset: 0 auto 0 0; background: linear-gradient(90deg, var(--brand-100), var(--accent-50)); border-right: 3px solid var(--brand); }
+.iv-val { position: absolute; left: 10px; top: 50%; transform: translateY(-50%); font-size: 12.5px; font-weight: 700; color: var(--brand-700); }
+.plan .plan-ico { background: var(--safety-50); }
+.plan-sec { margin-top: 14px; }
+.plan-sec h4 { margin: 0 0 6px; font-size: 13px; text-transform: uppercase; letter-spacing: .05em; color: var(--ink-2); display: flex; gap: 8px; align-items: center; }
+.plan-sec .pi { font-size: 15px; }
+.hz-grid { display: grid; gap: 10px; }
+.hz { border: 1px solid var(--line); border-left: 4px solid var(--safety); border-radius: 10px; padding: 8px 10px; background: #fffdf6; }
+.hz-name { font-weight: 700; font-size: 14px; margin: 2px 0 2px 8px; color: var(--safety-ink); }
+.plan-sec.tbm ol { margin: 0; padding-left: 22px; display: grid; gap: 4px; }
+.plan-sec.tbm li { font-size: 14px; }
+.plan-note { margin-top: 12px; font-size: 13px; color: var(--warn); background: var(--warn-50); border-radius: 8px; padding: 8px 10px; }

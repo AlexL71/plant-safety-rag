@@ -1,4 +1,4 @@
-/* DocAgent admin console. */
+/* SafetyAgent admin console: answers review, notice approval, test console, documents, settings. */
 "use strict";
 
 const $ = (id) => document.getElementById(id);
@@ -74,14 +74,28 @@ function evidenceHtml(ev) {
       <button class="btn btn-ghost btn-sm" data-more type="button">Show full text</button></div></div>`;
 }
 
+function checkLine(name, c) {
+  if (!c || !c.elements) return "";
+  const why = Object.entries(c).filter(([k]) => !["elements", "kept", "dropped"].includes(k)).map(([k, v]) => `${k} ${v}`).join(", ");
+  return `<span class="chip ${c.dropped ? "warn" : "ok"}">${name}: ${c.kept}/${c.elements} kept${c.dropped ? ` · dropped ${c.dropped} (${DA.esc(why)})` : ""}</span>`;
+}
+
 function renderDetail(el, m, { review = null } = {}) {
   const timings = m.timings ? Object.entries(m.timings).map(([k, v]) => `${k} ${v}s`).join(", ") : "";
+  const route = m.route || {};
+  const agent = `<div class="sub" style="display:flex;gap:6px;flex-wrap:wrap;margin-top:6px">
+      <span class="chip accent">Mode ${DA.esc(m.mode || "auto")} → ${DA.esc(m.intent || "answer")}</span>
+      ${route.reason ? `<span class="chip muted">router: ${DA.esc(route.reason)}</span>` : ""}
+      ${checkLine("visual check", m.visual_check)}${checkLine("plan check", m.plan_check)}${checkLine("notice check", m.notice_check)}
+      ${m.visual_reason ? `<span class="chip muted">no visual: ${DA.esc(m.visual_reason)}</span>` : ""}</div>`;
   el.innerHTML = `
     <div><div class="section-label">Question</div><div class="qbox">${DA.esc(m.question)}</div>
       <div class="sub">${m.standalone ? `Read as: “${DA.esc(m.standalone)}” · ` : ""}${m.translated ? `Also searched as: “${DA.esc(m.translated)}” · ` : ""}
-        Setup ${DA.esc(m.setup || "?")} · ${m.total_s ? `${m.total_s} s total` : ""}${timings ? ` (${timings}, LLM ${m.llm_s}s${m.llm_cached ? " cached" : ""})` : ""}</div></div>
+        Setup ${DA.esc(m.setup || "?")} · ${m.total_s ? `${m.total_s} s total` : ""}${timings ? ` (${timings}, LLM ${m.llm_s}s${m.llm_cached ? " cached" : ""})` : ""}</div>${agent}</div>
     <div><div class="section-label">Answer ${m.refused ? `<span class="chip muted">Refused: ${DA.esc(m.reason)}</span>` : ""}</div>
-      <div class="answer card" style="padding:16px 18px;box-shadow:none">${DA.renderAnswer(m.text, m.refused ? {} : m.passages || {})}</div></div>
+      <div class="answer card" style="padding:16px 18px;box-shadow:none">${m.kind === "plan" && m.plan ? DA.renderPlan(m.plan, m.passages || {})
+        : DA.renderAnswer(m.text, m.refused ? {} : m.passages || {})}${m.visual ? DA.renderVisual(m.visual, m.passages || {}) : ""}
+        ${m.kind === "notice" && m.notice_id ? `<div style="margin-top:8px"><a href="#notices" onclick="go('notices')">Notice drafted: review it in Notices</a></div>` : ""}</div></div>
     ${review ? `<div class="review"><div class="section-label">Your review</div>
       <div class="verdicts">${Object.entries(VERDICT_LABEL).map(([k, l]) =>
         `<button class="verdict ${k} ${review.verdict === k ? "on" : ""}" data-v="${k}" type="button">${l}</button>`).join("")}</div>
@@ -151,22 +165,47 @@ const TABS = {
       <div class="h"><h2>Test console</h2><span class="sub">Ask with any search setup and see everything the model was given. Not saved.</span></div>
       <form class="console" id="cform">
         <textarea class="input" id="cq" rows="2" placeholder="Question in Korean or English" required></textarea>
-        <select class="input" id="csetup">${Object.entries(s.setups).map(([k, d]) => `<option value="${k}" ${k === "E" ? "selected" : ""}>${k} · ${DA.esc(d)}</option>`).join("")}</select>
+        <div style="display:grid;gap:8px"><select class="input" id="csetup">${Object.entries(s.setups).map(([k, d]) => `<option value="${k}" ${k === "E" ? "selected" : ""}>${k} · ${DA.esc(d)}</option>`).join("")}</select>
+          <select class="input" id="cmode">${["auto", "answer", "visual", "compare", "task_plan", "notice"].map((x) => `<option value="${x}">mode: ${x}</option>`).join("")}</select></div>
         <button class="btn btn-primary" type="submit">Ask</button>
       </form>
       <div class="card detail" id="cout" style="margin-top:18px"><div class="muted">The answer, passages and timings appear here.</div></div>`;
     $("cform").addEventListener("submit", async (e) => {
       e.preventDefault();
-      const out = $("cout"), question = $("cq").value.trim(), setup = $("csetup").value;
+      const out = $("cout"), question = $("cq").value.trim(), setup = $("csetup").value, mode = $("cmode").value;
       out.innerHTML = `<div class="steps" style="display:flex;gap:10px;align-items:center"><div class="spinner"></div><span id="cstage">Starting…</span></div>`;
       try {
-        await DA.stream("/api/admin/ask", { question, setup }, (ev) => {
+        await DA.stream("/api/admin/ask", { question, setup, mode }, (ev) => {
           if (ev.type === "stage") $("cstage").textContent = `Stage: ${ev.stage}…`;
           else if (ev.type === "done") renderDetail(out, { ...ev.message, question });
           else if (ev.type === "error") out.innerHTML = `<span class="chip bad">Error</span> ${DA.esc(ev.detail)}`;
         });
       } catch (err) { out.innerHTML = `<span class="chip bad">Error</span> ${DA.esc(err.message)}`; }
     });
+  },
+
+  async notices() {
+    content.innerHTML = `
+      <div class="h"><h2>Notices</h2><span class="sub">Check drafted safety notices against their sources, then approve them for printing and sharing</span>
+        <select class="input" id="nfilter" style="width:200px;margin-left:auto">
+          <option value="">All notices</option><option value="draft">Waiting for approval</option><option value="approved">Approved</option></select></div>
+      <div class="split"><div class="card list" id="nlist"></div><div class="card detail" id="ndetail"><div class="muted">Select a notice.</div></div></div>`;
+    const load = async () => {
+      const f = $("nfilter").value;
+      const data = await DA.api(`/api/admin/notices${f ? `?status=${f}` : ""}`);
+      const list = $("nlist");
+      list.innerHTML = data.notices.length ? "" : `<div class="muted small" style="padding:12px">No notices yet.</div>`;
+      for (const n of data.notices) {
+        const row = document.createElement("div");
+        row.className = "row";
+        row.innerHTML = `<div class="q">${DA.esc(n.title)}</div><div class="m">${n.status === "approved" ? `<span class="chip ok">Approved v${n.approved_version ?? n.version}</span>`
+          : `<span class="chip warn">Draft v${n.version}</span>`}<span>${DA.esc(n.template)}</span><span>· ${n.lang.toUpperCase()}</span><span>· ${DA.timeAgo(n.updated)}</span></div>`;
+        row.onclick = () => { list.querySelectorAll(".row").forEach((r) => r.classList.remove("active")); row.classList.add("active"); openNotice(n.id, load); };
+        list.appendChild(row);
+      }
+    };
+    $("nfilter").onchange = load;
+    await load();
   },
 
   async docs() {
@@ -212,6 +251,46 @@ const TABS = {
     };
   },
 };
+
+async function openNotice(id, reloadList) {
+  const el = $("ndetail");
+  el.innerHTML = `<div class="muted small" style="display:flex;gap:10px;align-items:center"><div class="spinner"></div>Loading…</div>`;
+  const n = await DA.api(`/api/admin/notices/${encodeURIComponent(id)}`);
+  const lc = n.line_checks || [], bad = lc.filter((c) => !c.ok), warns = n.warnings || [];
+  const P = Object.values(n.passages || {});
+  el.innerHTML = `
+    <div><div class="section-label">Notice</div><div class="qbox">${DA.esc(n.title)}</div>
+      <div class="sub">${n.lang.toUpperCase()} · ${DA.esc(n.template)} · version ${n.version} · ${n.status === "approved" ? `approved by ${DA.esc(n.approved_by)} (v${n.approved_version})` : "not approved"}
+        ${n.topic ? ` · topic: “${DA.esc(n.topic)}”` : ""}</div></div>
+    <div class="review"><div class="section-label">Checks</div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">${warns.length ? `<span class="chip warn">⚠ ${warns.length} line(s): number not in the cited source, or no valid source</span>`
+        : `<span class="chip ok">✓ Every line cites a source and its numbers appear there</span>`}
+        ${checkLine("draft check", n.check)}
+        ${n.translation ? (bad.length ? `<span class="chip warn">⚠ translation: ${bad.length}/${lc.length} lines changed numbers</span>`
+          : `<span class="chip ok">✓ translation (${DA.esc((n.langs || {})[n.translation.lang] || n.translation.lang)}): numbers kept in ${lc.length}/${lc.length} lines</span>`) : ""}</div>
+      ${n.translation ? `<details><summary class="small">Back-translation (read this to check the meaning)</summary><div class="small" style="display:grid;gap:4px;margin-top:6px">
+        ${lc.map((c) => `<div${c.ok ? "" : ' style="color:var(--bad)"'}>${c.ok ? "✓" : "⚠"} ${DA.esc(c.back)}</div>`).join("")}</div></details>` : ""}
+      <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+        <button class="btn btn-primary btn-sm" id="approve" type="button" ${n.status === "approved" ? "disabled" : ""}>${n.status === "approved" ? "Approved" : "Approve for posting"}</button>
+        <a class="btn btn-ghost btn-sm" href="/notice/${encodeURIComponent(n.id)}" target="_blank" rel="noopener">Open print view ↗</a>
+        <button class="btn btn-ghost btn-sm" id="ndel" type="button">Delete</button><span class="small muted" id="nmsg"></span></div></div>
+    <div><div class="section-label">Sources (${P.length})</div><div style="display:grid;gap:6px;margin-top:6px">${P.map((p) =>
+      `<div class="small"><button class="btn btn-ghost btn-sm" data-open="${DA.esc(p.chunk_id)}" type="button">[${p.n}] Open</button> ${DA.esc(p.title)}, ${DA.esc(p.clause_id)}, ${DA.pages(p)}</div>`).join("")}</div></div>
+    <div><div class="section-label">Preview</div><div style="overflow:auto;background:var(--bg);padding:14px;border-radius:12px">
+      <div style="transform:scale(.62);transform-origin:top left;width:794px;margin-bottom:-38%">${DA.Notice.render(n, { editable: false })}</div></div></div>`;
+  el.querySelectorAll("[data-open]").forEach((b) => { b.onclick = () => viewer.open({ chunk_id: b.dataset.open }); });
+  $("approve").onclick = async () => {
+    await DA.api(`/api/admin/notices/${encodeURIComponent(id)}/approve`, { method: "POST" });
+    $("nmsg").textContent = "Approved. The share link and QR code now work for everyone.";
+    reloadList(); openNotice(id, reloadList);
+  };
+  $("ndel").onclick = async () => {
+    if (!confirm("Delete this notice?")) return;
+    await DA.api(`/api/admin/notices/${encodeURIComponent(id)}`, { method: "DELETE" });
+    el.innerHTML = `<div class="muted">Deleted.</div>`;
+    reloadList();
+  };
+}
 
 async function openAnswer(id, reloadList) {
   const el = $("adetail");

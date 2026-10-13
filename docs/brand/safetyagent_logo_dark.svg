@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 380 72" width="380" height="72">
+  <title>SafetyAgent logo (dark background)</title>
+  <rect x="4" y="4" width="64" height="64" rx="16" fill="#FFFFFF"/>
+  <path d="M36 15.5 L53 21.8 V34.6 C53 45.2 46.1 52.9 36 56.5 C25.9 52.9 19 45.2 19 34.6 V21.8 Z"
+        fill="none" stroke="#1428A0" stroke-width="4.6" stroke-linejoin="round"/>
+  <path d="M28.2 36.4 L33.6 41.8 L44.4 30.6" fill="none" stroke="#E09B00" stroke-width="5" stroke-linecap="round"
+        stroke-linejoin="round"/>
+  <g font-family="'Pretendard Variable', Pretendard, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif">
+    <text x="84" y="40" font-size="31" fill="#FFFFFF" textLength="288" lengthAdjust="spacing"><tspan font-weight="800">SAFETY</tspan><tspan font-weight="500">AGENT</tspan></text>
+    <text x="85" y="61" font-size="11.5" font-weight="600" fill="#C9D2F5" textLength="287" lengthAdjust="spacing">AI SAFETY ASSISTANT FOR INDUSTRIAL SITES</text>
+  </g>
+</svg>

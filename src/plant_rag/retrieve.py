@@ -110,14 +110,16 @@ class Retriever:
                                        show_progress_bar=False)
         return [float(s) for s in scores]
 
-    def _rerank_pool(self, ranked: list[tuple[int, float]], lists: dict[str, list[tuple[int, float]]]) -> list[int]:
+    def _rerank_pool(self, ranked: list[tuple[int, float]], lists: dict[str, list[tuple[int, float]]],
+                     size: int | None = None) -> list[int]:
         """Candidates for the reranker: the top `rerank_min_per_list` of every search list first, then the
         best of the fused ranking, up to `rerank_candidates`.
 
         Why: for a Korean question whose answer is only in an English document, BM25 finds nothing in
         English, so RRF pushes the dense list's best hit down (seen: dense rank 2 -> RRF rank 18).
         """
-        size, per_list = int(self.rcfg["rerank_candidates"]), int(self.rcfg["rerank_min_per_list"])
+        size = int(size or self.rcfg["rerank_candidates"])
+        per_list = min(int(self.rcfg["rerank_min_per_list"]), size)
         pool: list[int] = []
         for lst in lists.values():
             for i, _ in lst[:per_list]:
@@ -132,8 +134,9 @@ class Retriever:
 
     # ------------------------------------------------------------ main entry
     def search(self, query: str, setup: str | None = None, k: int | None = None,
-               on_stage: Callable[[str], None] | None = None) -> list[Hit]:
+               on_stage: Callable[[str], None] | None = None, rerank_candidates: int | None = None) -> list[Hit]:
         """Return the top-k hits for `query` under `setup` (A–E). Stage times go to self.timings.
+        `rerank_candidates` overrides the config (the task planner reranks fewer passages per hazard).
 
         Setup E ("translate": true) also translates the question into the other corpus language (one cached
         LLM call), runs BM25 and dense search for both versions, and reranks each passage against the
@@ -185,7 +188,7 @@ class Retriever:
             rank_of["rrf"] = {i: r for r, (i, _) in enumerate(ranked, 1)}
 
         if s["rerank"]:
-            cands = self._rerank_pool(ranked, lists)
+            cands = self._rerank_pool(ranked, lists, rerank_candidates)
             report("rerank")
             t0 = time.perf_counter()
             scores = self.rerank(rerank_query, cands) if cands else []

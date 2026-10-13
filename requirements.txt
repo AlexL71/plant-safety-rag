@@ -26,3 +26,5 @@ ipykernel>=6.29
 tqdm>=4.66
 fastapi>=0.115
 uvicorn>=0.30
+# QR codes on printed safety notices (pure Python, no dependencies)
+segno>=1.6

@@ -1,4 +1,4 @@
-"""The DocAgent engine: loads the plant_rag pipeline once and answers questions one at a time.
+"""The SafetyAgent engine: loads the plant_rag pipeline once and handles requests one at a time.
 
 - Loading (indexes + reranker, ~20 s) runs in a background thread so the web server starts at once.
 - Questions are serialized with a lock: the reranker uses all CPU cores, so parallel questions would only
@@ -15,10 +15,13 @@ from typing import Any, Callable
 
 import pymupdf
 
+from plant_rag import agent
 from plant_rag.config import load_config, resolve_path
-from plant_rag.generate import answer, condense_question, detect_lang, refusal_threshold
+from plant_rag.generate import detect_lang, refusal_threshold
 from plant_rag.ingest import read_manifest
-from plant_rag.retrieve import Retriever
+from plant_rag.notices import draft_notice, translate_notice
+from plant_rag.retrieve import Hit, Retriever
+from plant_rag.visuals import make_visual
 
 log = logging.getLogger(__name__)
 
@@ -80,37 +83,70 @@ class Engine:
                 "chunks": len(self.chunks), "uptime_s": round(time.time() - self.started)}
 
     # ---------------------------------------------------------------- answering
-    def run(self, question: str, history: list[tuple[str, str]], setup: str,
-            on_stage: Callable[[str], None] | None = None, answer_lang: str | None = None) -> dict[str, Any]:
-        """Answer one question (with chat history for follow-ups). Returns plain, JSON-ready data.
-        `answer_lang` ("ko" / "en") forces the answer language; None follows the question."""
-        lang = answer_lang or detect_lang(question)
+    def _require_ready(self) -> Retriever:
         if not self.ready or self.retriever is None:
             raise RuntimeError(self.error or "The engine is still loading; try again in a few seconds.")
+        return self.retriever
+
+    @staticmethod
+    def _evidence(hits: list[Hit]) -> list[dict[str, Any]]:
+        return [{"n": n, "chunk_id": h.chunk["chunk_id"],
+                 "score": round(h.rerank_score, 4) if h.rerank_score is not None else round(h.score, 4)}
+                for n, h in enumerate(hits, 1)]
+
+    def _hits_from(self, evidence: list[dict[str, Any]]) -> list[Hit]:
+        """Rebuild Hit objects from a stored message's evidence list (no new search)."""
+        hits = []
+        for e in sorted(evidence, key=lambda e: e["n"]):
+            c = self.chunks.get(e["chunk_id"])
+            if c:
+                hits.append(Hit(c, e["score"], rerank_score=e["score"]))
+        return hits
+
+    def run(self, question: str, history: list[tuple[str, str]], setup: str,
+            on_stage: Callable[[str], None] | None = None, answer_lang: str | None = None,
+            mode: str = "auto") -> dict[str, Any]:
+        """Handle one chat request through the agent (with chat history for follow-ups). Returns JSON-ready data.
+        `answer_lang` ("ko" / "en") forces the answer language; None follows the question. `mode` = "auto"
+        (the agent decides) or a fixed intent (answer, visual, compare, task_plan, notice)."""
+        lang = answer_lang or detect_lang(question)
+        retriever = self._require_ready()
+        with self.ask_lock:
+            res = agent.run(question, history, retriever, self.cfg, setup, mode=mode, lang=lang, on_stage=on_stage)
+        hits = res.pop("evidence_hits", [])
+        res |= {"evidence": self._evidence(hits), "lang_choice": answer_lang or "auto", "mode": mode,
+                "threshold": refusal_threshold(self.cfg, setup)}
+        res["timings"] = {k: round(v, 2) for k, v in (res.get("timings") or {}).items()}
+        return res
+
+    def visual_for(self, payload: dict[str, Any], preferred: str | None = None) -> dict[str, Any]:
+        """Make a visual for an answer that already exists, from its stored evidence (one model call)."""
+        self._require_ready()
+        hits = self._hits_from(payload.get("evidence", []))
+        question = payload.get("standalone") or payload.get("question", "")
+        with self.ask_lock:
+            return make_visual(question, hits, self.cfg, payload.get("lang", "en"), preferred,
+                               answer_text=payload.get("text"))
+
+    def notice_from(self, topic: str, lang: str, evidence: list[dict[str, Any]] | None = None,
+                    setup: str = "E", on_stage: Callable[[str], None] | None = None) -> dict[str, Any]:
+        """Draft notice content from stored evidence, or search for the topic first."""
+        retriever = self._require_ready()
         stage = on_stage or (lambda s: None)
         with self.ask_lock:
-            t0 = time.perf_counter()
-            standalone = question
-            if history:
-                stage("condense")
-                standalone = condense_question(question, history[-int(self.web["history_turns"]):], self.cfg)
-            hits = self.retriever.search(standalone, setup=setup, on_stage=stage)
-            timings = dict(self.retriever.timings)
-            translated = self.retriever.last_translation if self.cfg["retrieval"]["setups"][setup].get("translate") else None
-            stage("answer")
-            ans = answer(standalone, hits, self.cfg, setup, lang=lang)
-            total = time.perf_counter() - t0
-        return {
-            "question": question, "standalone": standalone if standalone != question else None,
-            "setup": setup, "lang": lang, "lang_choice": answer_lang or "auto", "text": ans.text, "refused": ans.refused,
-            "reason": ans.refusal_reason, "cited": ans.cited, "translated": translated,
-            "threshold": refusal_threshold(self.cfg, setup),
-            "evidence": [{"n": n, "chunk_id": h.chunk["chunk_id"],
-                          "score": round(h.rerank_score, 4) if h.rerank_score is not None else round(h.score, 4)}
-                         for n, h in enumerate(hits, 1)],
-            "timings": {k: round(v, 2) for k, v in timings.items()},
-            "llm_s": round(ans.llm_seconds, 2), "llm_cached": ans.llm_cached, "total_s": round(total, 2),
-        }
+            if evidence:
+                hits = self._hits_from(evidence)
+            else:
+                hits = retriever.search(topic, setup=setup, on_stage=stage)
+            stage("notice")
+            res = draft_notice(topic, hits, self.cfg, lang)
+        res.pop("raw", None)
+        return res | {"evidence": self._evidence(hits)}
+
+    def translate(self, content: dict[str, Any], target: str) -> dict[str, Any]:
+        self._require_ready()
+        with self.ask_lock:
+            return translate_notice(content, target, self.cfg)
 
     # ---------------------------------------------------------------- documents
     def passage(self, chunk_id: str, with_boxes: bool = False) -> dict[str, Any] | None:

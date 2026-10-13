@@ -1,4 +1,4 @@
-/* DocAgent shared front-end: API helpers, safe answer rendering, citation pop-overs, document viewer. */
+/* SafetyAgent shared front-end: API helpers, safe answer rendering, citation pop-overs, document viewer. */
 "use strict";
 
 const DA = {};

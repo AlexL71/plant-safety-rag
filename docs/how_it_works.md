@@ -261,7 +261,7 @@ Then open `notebooks/02_eval_analysis.ipynb`.
 
 ---
 
-## Step 7: The DocAgent platform (`app/`, Phase 4)
+## Step 7: The web platform (`app/`, Phase 4; first called DocAgent, now SafetyAgent)
 
 **What it is.** A small web platform with three pages, served by a Python web server (FastAPI) that reuses the
 pipeline above unchanged:
@@ -286,7 +286,8 @@ pipeline above unchanged:
 - *Admin login.* The password is never stored, only a PBKDF2 hash (310,000 rounds) in `secrets/`. A login creates a
   random session token (8 h) in an HttpOnly cookie. Users cannot call any admin endpoint.
 - *One question at a time.* The reranker uses all CPU cores, so questions are processed one after another.
-- *Storage.* One SQLite file (`data/app/docagent.sqlite`) for chats, reviews and settings.
+- *Storage.* One SQLite file (`data/app/docagent.sqlite`, name kept from the first version) for chats, reviews,
+  notices and settings.
 - *Safety.* Runs on `127.0.0.1` only. Answer text is escaped before display (the model cannot inject HTML).
 
 **Settings:** `configs/config.yaml`, section `web` (port, chat limits, history turns, session hours).
@@ -299,3 +300,82 @@ python -m app.server                  # http://127.0.0.1:8000
 ```
 
 Direct links: `/chat?q=<question>` asks a question in a new chat; `/chat?source=<chunk id>` opens a passage.
+
+---
+
+## Step 8: From EPC documents to a safety helper (corpus v2)
+
+**What changed.** The project was narrowed from "an agent for all EPC documents" to **SafetyAgent**, a safety
+helper for plants, factories and construction sites. The code did not change direction; the documents did.
+
+**New documents (19, all public):**
+- 8 US OSHA sections (CFR 2025 edition): PPE (1910.132), head protection (1910.135), permit-required confined
+  spaces (1910.146), lockout/tagout (1910.147), forklifts (1910.178), welding fire safety (1910.252), fall
+  protection (1926.501, 1926.502).
+- 9 KOSHA guides on the same topics (confined space programme, lockout, forklift training, vehicles in
+  workplaces, safety nets, welding fire prevention, PPE, hot environments, job risk assessment).
+- The Korean Occupational Safety and Health Act, and the 고용노동부 risk assessment guideline.
+
+Korean ↔ US pairs on the same topic make cross-language questions and Korea-vs-US comparisons possible.
+
+**Problems found and fixed while adding them:**
+- *Short CFR files* (1–3 pages) keep their page headers, because header removal needs the same text on several
+  pages. A small list of known running heads (`ingest.edge_line_patterns`) is removed, but only when the whole
+  row is running heads: "§ 1926.501" next to "Duty to have fall protection." is the real title.
+- *Wrapped CFR titles*: on two-column pages "(d) Permit-required confined space program." wraps, so the title is
+  read from this line plus the next one.
+- *Cross-references*: a sentence starting with "Appendix C to §1910.146" looked like the appendix heading and
+  swallowed paragraphs (d)–(k). Appendices must now come in order (A, B, C ...).
+- *A dotted table looked like a table of contents* (welding lens shades in 1910.252: "Soldering ........ 2"), so
+  two pages were dropped. A table of contents now also needs at least half its lines to be dot leaders.
+- *Numbered table rows looked like headings* ("6. 잭으로 차량을 들어올린다." in the job risk assessment guide).
+  KOSHA headings never end with a period, so such lines are skipped.
+- *One forklift guide was a scan* (images only, no text) and was replaced by two text guides.
+- The risk assessment guideline's PDF export on law.go.kr leaves out the articles, so the official text from
+  the page was printed to PDF locally (recorded in the manifest).
+
+All 1,155 chunks of the first 10 documents kept their ids (the test questions point at them); 1,941 chunks in
+total.
+
+---
+
+## Step 9: The agent (`agent.py`, `visuals.py`, `notices.py`, `checks.py`)
+
+**What it is.** One entry point decides what a request needs and uses the right tool. All tools use the same
+search (Step 4) and the same rule: write only from the cited passages.
+
+| Intent | What happens | Model calls |
+|---|---|---|
+| answer | search → cited answer (Step 5) | 1 (+1 translation) |
+| visual | answer + a structured visual from the same passages | 2 |
+| compare | search, keep the best 3 Korean + 3 English passages → answer + Korea-vs-US table | 2 |
+| task_plan | split the job into ≤ 3 hazards → one search per hazard → cited plan + TBM script | 2 (+ translations) |
+| notice | search → poster content (headline, rules, do / don't, key numbers) → stored for editing | 1 |
+| chitchat | fixed reply about what the assistant can do; no search | 0 |
+
+**Routing.** In "auto" mode one short model call with *structured output* (the model must return JSON that
+matches a schema) picks the intent. Users can also pick the mode themselves in the chat.
+
+**Why visuals are specs, not code.** The model never writes chart code or HTML. It fills one of five fixed
+types (steps, checklist, compare, limits, intervals) as JSON, and the web page draws them. That keeps the
+design consistent, makes the output checkable, and cannot inject anything into the page.
+
+**The checks (`checks.py`).** Before anything is shown, printed or posted:
+1. every element must cite an evidence passage that exists, and
+2. every number in the element must appear in a cited passage (the *numbers guard*). "1,000" and "1000" count
+   as the same; number words in the source ("every three years", "annually", "a half hour") count too.
+Elements that fail are dropped; if too few survive, there is no visual (the text answer stays). The same check
+runs on job plans, notices, and again on any line a person edits in the notice editor (shown as a warning).
+
+**Notices.** Four print templates (A4 poster, A5 leaflet, square messenger card, A4 TBM sheet with a sign-off
+table), a QR code to each cited clause, and an optional second language for foreign workers. The translation is
+translated back automatically; a line passes only if its numbers survive both directions, and a reviewer can read
+the back-translation without knowing the language. A notice is a **draft** until an admin approves it; any edit
+after approval needs a new approval. Only approved notices open from the share link.
+
+**Why a small state machine, not an open loop.** Each request takes at most about four steps, every step is
+shown in the progress list, and every path can be tested. An open "think-act" loop would be harder to explain,
+slower on a laptop and harder to evaluate.
+
+**Settings:** `configs/config.yaml`, sections `agent`, `visuals`, `notices`, and `web.modes` /
+`web.public_base_url` (the address QR codes point to; set it to the server's network address for phones).

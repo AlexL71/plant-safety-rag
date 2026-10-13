@@ -1,155 +1,103 @@
-# DocAgent
+# SafetyAgent
 
-**The AI agent for EPC project documents.**
+**AI safety assistant for industrial sites.**
 
-DocAgent connects to the place where an EPC (engineering, procurement, construction) project keeps its
-documents, its CDE (Common Data Environment) or document management system, and works on top of it.
-Engineers ask questions in Korean or English and get answers that cite the exact clause. The agent also
-takes multi-step tasks: checking a document against the specifications, comparing revisions, or drafting
-review comments. It **prepares** the work and **a person approves it**. When the documents don't contain the
-answer, it says so instead of guessing.
+SafetyAgent answers workplace-safety questions from **Korean and US safety rules** (KOSHA guides, the Korean
+Occupational Safety and Health Act and its rules, OSHA standards), in Korean or English. It is an **agent**: it
+decides what a request needs and uses the right tool:
 
-Main-page text and module descriptions for the platform: [`docs/docagent_main_page.md`](docs/docagent_main_page.md).
+- 💬 **answers** with the exact clause cited for every statement, or an honest *"not found"*;
+- 📊 **visuals**: procedures as step flows, requirements as checklists, limits on a scale, deadlines on a timeline;
+- ⚖️ **Korea vs US** comparisons in one table;
+- 🧰 **job plans**: describe tomorrow's work, get permits, hazards, controls, checks, PPE and a TBM briefing;
+- 📄 **notices** to print or share: poster, leaflet, messenger card or TBM sheet, with QR codes to the clauses
+  and a second language for foreign workers, **approved by a person** before posting.
 
-### Modules
+Nothing is shown unless it is checked: every line must cite a passage, and every number must appear in that
+passage. The code package is named `plant_rag` (the project started as a process-safety RAG).
 
-| Module | What it does | Status |
-|---|---|---|
-| **DocAgent Ask** | Questions in KO / EN → answers with clause-level citations, or "not found" | ✅ Built and evaluated (this repository) |
-| **DocAgent Search** | Find any document or clause across all sources and languages | ✅ Core built (hybrid search + reranker) |
-| **DocAgent Library** | One register of all project documents, connected to SharePoint, Aconex, ProjectWise or shared folders | Planned |
-| **DocAgent Check** | Check a datasheet or vendor document against specs and standards, and list mismatches with citations | Planned |
-| **DocAgent Flow** | Track reviews, approvals and revisions; draft comment sheets for a person to approve | Planned |
-
-### This repository: DocAgent Ask (first module)
-
-A bilingual (Korean / English) assistant that answers questions about plant **process-safety standards**
-with **clause-level citations**, and says *"not found"* when the documents do not contain the answer.
-It is the "find and cite" tool that the agent's later steps are built on.
-
-Engineers spend a lot of time finding the right clause across Korean regulations, KOSHA technical guides and
-US OSHA rules, and a missed requirement is expensive. The code package is still named `plant_rag`.
-
-![DocAgent landing page](docs/figures/docagent_landing.png)
-
-## The platform
-
-| | |
-|---|---|
-| **Chat** (`/chat`) | Chat-style Q&A for engineers. Answers show only the text with numbered citations: **hover** a number to read the exact passage, **click** to open the original PDF in a side panel with the passage outlined. New chats, history of up to 50 chats per browser, follow-up questions understood from context, live progress while the answer is prepared. |
-| **Admin** (`/admin`, password) | Choose the search method users get (A–E, with measured results), review every user answer against its sources (correct / partly / incorrect + note), test console with any method, browse all documents and open the original PDFs. |
-| **Landing** (`/`) | What DocAgent is, built vs planned modules, measured results. |
-
-![Answer source outlined in the original document](docs/figures/docagent_viewer_kosha.png)
-
-## What it does
-
-- **Ask in Korean or English**; the answer comes back in the question's language.
-- **Cross-language search**: a Korean question can be answered from the US CFR, an English question from a
-  Korean KOSHA guide or law article.
-- **Every claim cites a passage** `[n]` → document, clause and page (e.g. *산업안전보건기준에 관한 규칙,
-  제261조 ①–②, p. 46*).
-- **Refuses instead of guessing** when the documents do not cover the question.
-- **Measured**: a 60-question bilingual test set, five search setups compared (ablation), answers graded for
-  faithfulness and correctness.
+![SafetyAgent landing page](docs/figures/safetyagent_landing.png)
 
 ## Results
 
-On **40 held-out test questions** (34 answerable, 16 of them cross-language; 6 unanswerable):
-
-| Setup | Recall@5 | Cross-language | MRR@10 | Correct / false refusals | Faithful / correct answers |
-|---|---|---|---|---|---|
-| A · BM25 (keyword) | 18/34 | 0/16 | 0.40 | – | – |
-| B · Dense (meaning) | 32/34 | 14/16 | 0.86 | – | – |
-| C · Hybrid (RRF) | 23/34 | 5/16 | 0.52 | 6/6 · 10/34 | 24/24 · 22/24 |
-| D · Hybrid + reranker | 30/34 | 12/16 | 0.79 | 6/6 · 4/34 | 30/30 · 29/30 |
-| **E · D + query translation** | **34/34** | **16/16** | **0.92** | **6/6 · 1/34** | **33/33 · 32/33** |
-
-> Hybrid search + reranker + query translation (E) found the right clause in the top 5 for **34/34**
-> questions (keyword search alone: 18/34), including **16/16** cross-language ones, refused **6/6**
-> unanswerable questions with **1/34** false refusal, and every answer it gave was faithful to its sources.
-
-![Recall@5 by setup](docs/figures/recall_by_setup.png)
-
-**What we learned**
-- **Same-language questions are easy for every setup (18/18).** All the difference is in cross-language questions.
-- **Hybrid search hurts cross-language questions unless the question is translated**: keyword search only finds
-  passages in the question's language, so rank fusion buries the right passage, and the reranker scores
-  Korean–English pairs too low. Translating the question (one small cached LLM call) fixes both.
-- **The LLM rarely invents**: all 87 graded answers were fully faithful to the passages shown; errors are omissions.
-- **Trade-off**: E takes ~23 s per question on a laptop CPU (mostly the reranker); dense-only search finds
-  almost as much in ~0.5 s but ranks worse and cannot support a reliable refusal threshold.
-
-Details, charts and failure cases: [`notebooks/02_eval_analysis.ipynb`](notebooks/02_eval_analysis.ipynb).
+__RESULTS__
 
 ## How it works
 
 ```mermaid
 flowchart LR
-    Q["Question (KO or EN)"] --> T["Translate to the other language<br/>(Gemini, cached)"]
-    Q --> S
-    T --> S["Search both versions<br/>BM25 (Kiwi morphemes) + dense (Gemini embeddings, FAISS)"]
-    S --> F["Rank fusion (RRF)"]
-    F --> R["Reranker (bge-reranker-v2-m3, CPU)<br/>each passage vs. question in its own language"]
-    R -->|best score < threshold| N["Not found<br/>(no LLM call)"]
-    R -->|top 5 passages| G["Gemini answers with [n] citations<br/>or says 'not found'"]
-    G --> A["Answer with numbered citations<br/>(hover: passage · click: outlined in the PDF)"]
+    U["Request (KO or EN)"] --> R{"Router<br/>(1 short model call,<br/>or the user's mode)"}
+    R -->|answer / visual / compare| S["Search<br/>BM25 + dense → RRF → reranker<br/>question also translated KO↔EN"]
+    R -->|job plan| H["Split the job into hazards<br/>→ one search per hazard"]
+    R -->|notice| S
+    R -->|chitchat| C["What I can do"]
+    S --> G["Gemini writes from the passages only<br/>answer · visual spec · notice content"]
+    H --> G
+    G --> K["Checks: valid citation + every number<br/>found in the cited passage"]
+    K --> O["Chat: answer, visual, plan<br/>Notice editor → admin approval → print / share"]
 ```
 
-1. **Ingest** (PyMuPDF): page lines with position and font. Korean KOSHA PDFs contain *no space characters*;
-   spaces are rebuilt from character gaps. Running headers/footers, page numbers and a rotated margin stamp
-   are removed.
-2. **Chunk by clause**: law articles (제N조), KOSHA sections (4.2, 8.2.1, 부록), CFR paragraphs ((a)–(p), appendices),
-   font-based headings for booklets. Max 500 tokens (reranker tokenizer). 10 documents → 1,155 chunks.
-3. **Index**: Gemini embeddings (`gemini-embedding-001`, 768-d) in FAISS + BM25. All API results are cached on
-   disk, so nothing is paid for twice.
-4. **Search, rerank, answer** as in the diagram (`gemini-3.8-flash`, temperature 0).
+1. **Ingest and chunk** 29 public PDFs by clause: law articles (제N조), KOSHA sections, CFR paragraphs and
+   appendices. Korean KOSHA PDFs have no space characters (rebuilt from character gaps); running headers, page
+   numbers, tables of contents and margin stamps are removed. 1,941 chunks.
+2. **Index**: Gemini embeddings (`gemini-embedding-001`) in FAISS + BM25 with Korean morphemes (Kiwi). All API
+   results are cached on disk.
+3. **Search** (setup E): the question is also translated into the other language; keyword and meaning search run
+   for both; rank fusion; a multilingual reranker (bge-reranker-v2-m3, CPU) reads each passage against the
+   question in the passage's language. Below a tuned score it answers "not found" without calling the model.
+4. **Agent tools** (`agent.py`): answers (`generate.py`), visuals (`visuals.py`), job plans, notices
+   (`notices.py`). The model fills **JSON specs** that the web page draws; it never writes code or HTML.
+5. **Checks** (`checks.py`): citation check + numbers guard on everything shown, printed or posted; the notice
+   editor re-checks human edits; translations are checked by back-translation.
 
-All LLM and embedding calls go through one function each (`generate.call_llm_record`, `embed.embed_texts`), so an
-in-house / on-premise model can replace Gemini for confidential documents without touching the rest.
-
+All model calls go through one function (`generate.call_llm_record`), so an on-premise model can replace Gemini.
 Plain-English notes on every step: [`docs/how_it_works.md`](docs/how_it_works.md).
 
-## Data
+## The web app
+
+| Page | What it does |
+|---|---|
+| **Chat** (`/chat`) | Ask in KO/EN; mode switch (Auto · Q&A · Visual · KR vs US · Job plan · Notice); live progress of each agent step; citations: **hover** for the passage, **click** for the original PDF with the passage outlined; "Show as a visual", "Make a notice", "Make a TBM sheet" buttons; 50 chats per browser. |
+| **Notices** (`/notices`) | Draft from a topic or a chat answer; edit the text in place (numbers re-checked); 4 print templates; second language (16 languages offered) with back-translation; print / PDF, PNG image, share link + QR after approval. |
+| **Admin** (`/admin`, password) | Review answers against all passages the model saw; **approve notices**; test console with any search setup and agent mode; documents; settings. |
+| **Landing** (`/`) | What SafetyAgent does, built vs planned modules, measured results. EN / 한국어 interface. |
+
+![Visual answer in the chat](docs/figures/safetyagent_chat_visual.png)
+
+## Data (29 public documents)
 
 | Documents | Language | Source |
 |---|---|---|
-| 7 KOSHA technical guides (기술지원규정): relief valves, HAZOP, management of change, pre-startup review, work permits, inspection & maintenance, atmospheric tanks | KO | KOSHA portal |
-| 산업안전보건기준에 관한 규칙 (Occupational Safety and Health Standards Rule, full text) | KO | law.go.kr |
-| 29 CFR 1910.119 Process Safety Management (2025 edition) | EN | govinfo.gov |
+| 산업안전보건법 (Occupational Safety and Health Act) | KO | law.go.kr |
+| 산업안전보건기준에 관한 규칙 (Safety and Health Standards Rule, full text) | KO | law.go.kr |
+| 사업장 위험성평가에 관한 지침 (risk assessment guideline, 고용노동부고시) | KO | law.go.kr |
+| 16 KOSHA guides: confined spaces, lockout/tagout, forklifts, vehicles in workplaces, safety nets, welding fire prevention, PPE, hot environments, job risk assessment, work permits, relief valves, HAZOP, management of change, pre-startup review, inspection & maintenance, atmospheric tanks | KO | KOSHA portal |
+| 9 OSHA standards (2025 CFR): 1910.119 PSM, 1910.132 PPE, 1910.135 head protection, 1910.146 confined spaces, 1910.147 lockout/tagout, 1910.178 forklifts, 1910.252 welding, 1926.501–.502 fall protection | EN | govinfo.gov |
 | OSHA 3132 *Process Safety Management* booklet | EN | osha.gov |
 
-PDFs and derived chunks are **not** in this repository. [`data/manifest.csv`](data/manifest.csv) lists every
-source URL so the corpus can be rebuilt.
+PDFs and chunks are **not** in this repository; [`data/manifest.csv`](data/manifest.csv) lists every source URL.
+Only public documents are sent to the Gemini API.
 
 ## Evaluation method
 
-- **60 questions** (`eval/questions.jsonl`): 50 answerable (25 KO, 25 EN; 23 cross-language), 10 on-topic but
-  unanswerable (e.g. SIL determination, LOPA, blast overpressure). Split **20 dev** (used for design choices:
-  adding setup E, the refusal threshold) / **40 test** (run once).
-- Gold labels list **every** chunk that states the answer (e.g. a law article *and* the KOSHA guide quoting it).
-- Metrics: Recall@5, MRR@10, refusals, citation accuracy, and faithfulness / correctness (0–2) with
+- **Retrieval and answers**: 87 bilingual questions (`eval/questions.jsonl`). Set 1 (60, on process safety): 20
+  dev (used for design choices) / 40 test. Set 2 (27, on the new topics: confined spaces, lockout, forklifts,
+  falls, welding, PPE, heat, risk assessment, the OSH Act): all held out. Gold labels list **every** chunk that
+  states the answer. Metrics: Recall@5, MRR@10, refusals, citations; answers graded with
   [`eval/faithfulness_rubric.md`](eval/faithfulness_rubric.md).
-- **Honest caveats**: questions were drafted by LLM agents that read the documents, and gold labels and answer
-  grades were verified by Claude (a second session re-graded a 20% sample: 17/17 agreement), **not by a human
-  expert**. The set is small (one test question ≈ 3 percentage points).
-
-## Failure cases
-
-- **Terminology gap → false refusal.** A Korean question about HAZOP *노드* (nodes): the guide says *검토구간*.
-  The right clause ranked #1 but its reranker score fell below the refusal threshold.
-- **Truncated answer.** Gemini's internal "thinking" used ~1,960 of 2,048 output tokens on one answer (setup C).
-  Fixed by raising the limit and warning on truncation.
-- **Editions disagree.** For the US flammable-quantity threshold, the answer followed the 2000 booklet wording and
-  dropped the 2025 rule's "Category 1 / flashpoint < 100 °F" qualifier.
+- **Agent** (`python -m plant_rag.eval_agent`): router accuracy on 42 labeled requests (6 per intent + 6 harder,
+  mixed ones); 12 visuals, 6 job plans and 6 notices end to end, with the automatic checks and a faithfulness
+  grade per element.
+- **Honest caveats**: questions, gold labels and grades were written and verified by AI (Claude), **not by a human
+  safety expert**. The sets are small (one question ≈ 3–4 percentage points).
 
 ## Limitations
 
-- 10 documents; more KOSHA guides are planned. Tables are flattened into text; equations in some KOSHA guides
-  cannot be decoded (replaced by `[수식]`).
-- Page numbers are PDF page numbers, not the printed ones.
-- Latency ~20–25 s per question on a laptop CPU (reranker); a GPU makes reranking near-instant.
-- Public documents only are sent to the Gemini API. **This is a reference tool, not legal or safety advice.**
+- Laptop CPU: ~20–60 s per request (reranker); a GPU makes reranking near-instant.
+- Tables are flattened into text; some KOSHA equations can't be decoded (`[수식]`). Page numbers are PDF pages.
+- Machine translation of notices is checked for numbers, not certified; it is labelled "review before use".
+- Planned, not built: camera watch (PPE / danger-zone alerts linked to rules), site photo review, danger
+  anticipation from video. **This is a reference tool, not legal or safety advice.**
 
 ## Run it
 
@@ -163,46 +111,33 @@ pip install -r requirements.txt
 pip install -e .
 ```
 
-**Gemini API key**: create one in [Google AI Studio](https://aistudio.google.com/) (API keys → Create).
-Either set the environment variable `GEMINI_API_KEY`, or save the key (one line) to
-`secrets/gemini_api_key.txt`. The `secrets/` folder is git-ignored; never commit the key.
+**Gemini API key**: create one in [Google AI Studio](https://aistudio.google.com/). Set `GEMINI_API_KEY`, or save
+the key to `secrets/gemini_api_key.txt` (git-ignored; never commit it).
 
 ```powershell
-python -m plant_rag.smoke_test --list-models   # check the key and available models (free)
-python -m plant_rag.smoke_test                 # one answer + one embedding call (< US$0.01)
+python -m plant_rag.smoke_test      # one answer + one embedding call (< US$0.01)
+python -m plant_rag.ingest          # PDFs in data/raw/ -> page lines
+python -m plant_rag.chunk           # -> clause chunks
+python -m plant_rag.index           # -> embeddings + indexes (~US$0.10 the first time)
+python -m plant_rag.ask "밀폐공간 작업 시 적정공기 기준은?"
 ```
 
-Build the corpus (download the PDFs listed in `data/manifest.csv` into `data/raw/` first):
-
-```powershell
-python -m plant_rag.ingest      # PDFs -> page lines (~3 s)
-python -m plant_rag.chunk       # -> clause chunks (~1 min)
-python -m plant_rag.index       # -> embeddings + indexes (~45 s, about US$0.05 the first time)
-```
-
-Ask from the command line:
-
-```powershell
-python -m plant_rag.ask "안전밸브는 어떤 설비에 설치해야 하나요?"
-```
-
-Run the DocAgent web app (http://127.0.0.1:8000, localhost only):
+Web app (http://127.0.0.1:8000, localhost only):
 
 ```powershell
 python -m app.auth --username admin    # once: set the admin password (only a hash is stored, in secrets/)
 python -m app.server
 ```
 
-Chats, reviews and settings are stored in `data/app/docagent.sqlite` (git-ignored). Limits (50 chats per
-browser, questions per chat) are in `configs/config.yaml`, section `web`.
-
 Evaluate:
 
 ```powershell
-python -m plant_rag.evaluate --split test --setups A,B,C,D,E --run my_run
+python -m plant_rag.evaluate --split test2 --setups A,B,C,D,E --run my_run
+python -m plant_rag.eval_agent --part all --run my_agent_run
 ```
 
-Settings (models, search sizes, thresholds, chunk sizes) are all in [`configs/config.yaml`](configs/config.yaml).
+All settings (models, search sizes, thresholds, agent limits, chat limits) are in
+[`configs/config.yaml`](configs/config.yaml).
 
 ## Project structure
 
@@ -212,13 +147,13 @@ src/plant_rag/
   ingest.py  chunk.py      PDF -> page lines -> clause chunks
   embed.py   index.py      Gemini embeddings (cached) -> FAISS + BM25
   retrieve.py              BM25 + dense -> RRF -> reranker (setups A-E)
-  generate.py              prompt, answer, citations, refusal, query translation
-  ask.py  evaluate.py      CLI demo, evaluation
-app/                       DocAgent web app (FastAPI)
-  server.py  engine.py     API + pipeline wrapper (live progress, PDF page rendering)
-  store.py  auth.py        SQLite chats/reviews/settings, admin password hashing
-  static/                  landing, chat and admin pages (HTML/CSS/JS)
-eval/                      questions, rubric, results
-notebooks/                 01 parsing checks, 02 evaluation analysis
-docs/                      how_it_works.md, figures
+  generate.py              prompts, answers, citations, refusal, translation, the one LLM function
+  agent.py                 router + tools: answer, visual, compare, job plan, notice
+  visuals.py  notices.py   structured visuals; notice content + translation check
+  checks.py                citation check + numbers guard
+  ask.py evaluate.py eval_agent.py   CLI demo, retrieval/answer evaluation, agent evaluation
+app/                       web app (FastAPI): server.py, engine.py, store.py (SQLite), auth.py
+  static/                  landing, chat, notices, notice view, admin (HTML/CSS/JS)
+eval/                      questions, agent cases, rubric, results
+docs/                      how_it_works.md, figures, brand (logo)
 ```

@@ -57,7 +57,7 @@ def save_credentials(cfg: dict, username: str, password: str) -> Path:
 
 
 def main() -> None:
-    ap = argparse.ArgumentParser(description="Create or change the DocAgent admin account.")
+    ap = argparse.ArgumentParser(description="Create or change the SafetyAgent admin account.")
     ap.add_argument("--username", default="admin")
     ap.add_argument("--config", default="configs/config.yaml")
     args = ap.parse_args()

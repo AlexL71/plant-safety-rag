@@ -1,0 +1,42 @@
+{"id": "r01", "lang": "ko", "text": "안전대는 몇 미터 이상 높이에서 착용해야 하나요?", "intent": "answer"}
+{"id": "r02", "lang": "en", "text": "What must an entry permit for a confined space contain?", "intent": "answer"}
+{"id": "r03", "lang": "ko", "text": "지게차 운전자 교육은 누가 실시해야 하나요?", "intent": "answer"}
+{"id": "r04", "lang": "en", "text": "Is a hard hat required when there is a risk of falling objects?", "intent": "answer"}
+{"id": "r05", "lang": "ko", "text": "위험성평가는 언제 다시 해야 하나요?", "intent": "answer"}
+{"id": "r06", "lang": "en", "text": "What does lockout mean in OSHA 1910.147?", "intent": "answer"}
+{"id": "r07", "lang": "ko", "text": "밀폐공간 작업 절차를 단계별 흐름도로 보여줘", "intent": "visual"}
+{"id": "r08", "lang": "en", "text": "Show the lockout/tagout procedure as a step-by-step diagram", "intent": "visual"}
+{"id": "r09", "lang": "ko", "text": "용접 작업 전 화재예방 확인 사항을 체크리스트 형태로 보여줘", "intent": "visual"}
+{"id": "r10", "lang": "en", "text": "Chart the safe gas concentration limits for confined spaces", "intent": "visual"}
+{"id": "r11", "lang": "en", "text": "Put the inspection and record-keeping periods for lockout procedures on a timeline", "intent": "visual"}
+{"id": "r12", "lang": "ko", "text": "추락방호망 설치 기준을 그림으로 설명해 줘", "intent": "visual"}
+{"id": "r13", "lang": "ko", "text": "한국과 미국의 밀폐공간 산소 기준을 비교해 줘", "intent": "compare"}
+{"id": "r14", "lang": "en", "text": "Compare Korean and US requirements for a fire watch after welding", "intent": "compare"}
+{"id": "r15", "lang": "ko", "text": "OSHA와 KOSHA의 잠금·표지 정기점검 주기는 어떻게 다른가요?", "intent": "compare"}
+{"id": "r16", "lang": "en", "text": "How does Korea's fall protection height differ from OSHA's?", "intent": "compare"}
+{"id": "r17", "lang": "ko", "text": "지게차 운전자 평가는 미국 기준과 한국 기준 중 어느 쪽이 더 엄격한가요?", "intent": "compare"}
+{"id": "r18", "lang": "en", "text": "Korea vs US: who must assess hazards before choosing PPE?", "intent": "compare"}
+{"id": "r19", "lang": "ko", "text": "내일 탱크 안에서 용접 작업이 있습니다. 뭘 준비해야 하죠?", "intent": "task_plan"}
+{"id": "r20", "lang": "en", "text": "We are replacing a pump motor next week and the line still has stored pressure. What should the crew check?", "intent": "task_plan"}
+{"id": "r21", "lang": "ko", "text": "다음 주에 지붕 위 3m 높이에서 배관 보수 작업을 합니다. TBM 자료를 준비해 줘", "intent": "task_plan"}
+{"id": "r22", "lang": "en", "text": "Our crew will clean a sewer manhole tomorrow. Make a pre-work checklist for that job.", "intent": "task_plan"}
+{"id": "r23", "lang": "ko", "text": "여름철 옥외 작업이 예정되어 있습니다. 작업 전에 무엇을 점검해야 하나요?", "intent": "task_plan"}
+{"id": "r24", "lang": "en", "text": "Plan the safety checks for unloading chemical drums with a forklift in the warehouse", "intent": "task_plan"}
+{"id": "r25", "lang": "ko", "text": "지게차 안전 포스터를 만들어 줘", "intent": "notice"}
+{"id": "r26", "lang": "en", "text": "Make a poster about confined space entry for the maintenance team", "intent": "notice"}
+{"id": "r27", "lang": "ko", "text": "외국인 근로자용 보호구 착용 안내문을 만들어 줘", "intent": "notice"}
+{"id": "r28", "lang": "en", "text": "Create a flyer we can post near the welding area about fire prevention", "intent": "notice"}
+{"id": "r29", "lang": "ko", "text": "현장 게시용 추락 예방 안내문 초안을 작성해 줘", "intent": "notice"}
+{"id": "r30", "lang": "en", "text": "Draft a notice about heat illness to share in the team chat", "intent": "notice"}
+{"id": "r31", "lang": "ko", "text": "안녕하세요", "intent": "chitchat"}
+{"id": "r32", "lang": "en", "text": "Thanks, that was helpful!", "intent": "chitchat"}
+{"id": "r33", "lang": "ko", "text": "너는 누구야? 뭘 할 수 있어?", "intent": "chitchat"}
+{"id": "r34", "lang": "en", "text": "What can you do?", "intent": "chitchat"}
+{"id": "r35", "lang": "ko", "text": "오늘 점심 메뉴 추천해 줘", "intent": "chitchat"}
+{"id": "r36", "lang": "en", "text": "Write me a poem about the ocean", "intent": "chitchat"}
+{"id": "r37", "lang": "ko", "text": "밀폐공간 산소 농도 기준이 뭐야? 표로 정리해서 보여줘", "intent": "visual", "hard": true}
+{"id": "r38", "lang": "en", "text": "Tell me the fall protection height and turn it into a poster for the site", "intent": "notice", "hard": true}
+{"id": "r39", "lang": "ko", "text": "지게차 하역 작업 전에 TBM에서 읽어 줄 내용을 알려 줘", "intent": "task_plan", "hard": true}
+{"id": "r40", "lang": "en", "text": "Is OSHA stricter than Korea on how often forklift operators are evaluated?", "intent": "compare", "hard": true}
+{"id": "r41", "lang": "en", "text": "What's the weather like today?", "intent": "chitchat", "hard": true}
+{"id": "r42", "lang": "ko", "text": "보호구 착용 안내 포스터에 넣을 문구를 만들어 줘", "intent": "notice", "hard": true}

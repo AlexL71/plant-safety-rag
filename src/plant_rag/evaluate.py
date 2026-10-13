@@ -147,7 +147,7 @@ def main() -> None:
     ap = argparse.ArgumentParser(description="Evaluate retrieval and answers on eval/questions.jsonl.")
     ap.add_argument("--config", default="configs/config.yaml")
     ap.add_argument("--questions", default="eval/questions.jsonl")
-    ap.add_argument("--split", default="dev", choices=["dev", "test", "all"])
+    ap.add_argument("--split", default="dev", choices=["dev", "test", "test2", "all"])
     ap.add_argument("--setups", default="A,B,C,D")
     ap.add_argument("--run", required=True, help="name of the results folder under eval/results/")
     ap.add_argument("--limit", type=int, default=0, help="only the first N questions (quick check)")

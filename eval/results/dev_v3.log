@@ -1,0 +1,108 @@
+[1/100] A q001 gold@3  (4.1s)
+[2/100] A q004 gold@1  (0.0s)
+[3/100] A q007 gold@1  (0.0s)
+[4/100] A q013 gold@-  (0.0s)
+[5/100] A q015 gold@-  (0.0s)
+[6/100] A q017 gold@-  (0.0s)
+[7/100] A q019 gold@-  (0.0s)
+[8/100] A q035 gold@-  (0.0s)
+[9/100] A q037 gold@1  (0.0s)
+[10/100] A q038 gold@-  (0.0s)
+[11/100] A q039 gold@1  (0.0s)
+[12/100] A q041 gold@2  (0.0s)
+[13/100] A q043 gold@3  (0.0s)
+[14/100] A q045 gold@3  (0.0s)
+[15/100] A q046 gold@1  (0.0s)
+[16/100] A q049 gold@-  (0.0s)
+[17/100] A q051 gold@-  (0.0s)
+[18/100] A q053 gold@-  (0.0s)
+[19/100] A q056 gold@-  (0.0s)
+[20/100] A q058 gold@-  (0.0s)
+[21/100] B q001 gold@1  (0.0s)
+[22/100] B q004 gold@1  (0.0s)
+[23/100] B q007 gold@1  (0.0s)
+[24/100] B q013 gold@1  (0.0s)
+[25/100] B q015 gold@4  (0.0s)
+[26/100] B q017 gold@1  (0.0s)
+[27/100] B q019 gold@1  (0.0s)
+[28/100] B q035 gold@1  (0.0s)
+[29/100] B q037 gold@1  (0.0s)
+[30/100] B q038 gold@1  (0.0s)
+[31/100] B q039 gold@1  (0.0s)
+[32/100] B q041 gold@2  (0.0s)
+[33/100] B q043 gold@1  (0.0s)
+[34/100] B q045 gold@2  (0.0s)
+[35/100] B q046 gold@1  (0.0s)
+[36/100] B q049 gold@1  (0.0s)
+[37/100] B q051 gold@-  (0.0s)
+[38/100] B q053 gold@-  (0.0s)
+[39/100] B q056 gold@-  (0.0s)
+[40/100] B q058 gold@-  (0.0s)
+[41/100] C q001 gold@1  (0.0s)
+[42/100] C q004 gold@1  (0.0s)
+[43/100] C q007 gold@1  (0.0s)
+[44/100] C q013 gold@4  (0.0s)
+[45/100] C q015 gold@- refused (0.0s)
+[46/100] C q017 gold@6 refused (0.0s)
+[47/100] C q019 gold@- refused (0.0s)
+[48/100] C q035 gold@- refused (0.0s)
+[49/100] C q037 gold@1  (0.0s)
+[50/100] C q038 gold@-  (0.0s)
+[51/100] C q039 gold@1  (0.0s)
+[52/100] C q041 gold@2  (0.0s)
+[53/100] C q043 gold@1  (0.0s)
+[54/100] C q045 gold@2  (0.0s)
+[55/100] C q046 gold@1  (0.0s)
+[56/100] C q049 gold@3  (0.0s)
+[57/100] C q051 gold@- refused (0.0s)
+[58/100] C q053 gold@- refused (0.0s)
+[59/100] C q056 gold@- refused (0.0s)
+[60/100] C q058 gold@- refused (0.0s)
+Loading weights:   0%|          | 0/393 [00:00<?, ?it/s]Loading weights:   2%|▏         | 8/393 [00:00<00:07, 50.82it/s]Loading weights:   4%|▍         | 15/393 [00:00<00:06, 58.64it/s]Loading weights:   8%|▊         | 32/393 [00:00<00:03, 94.62it/s]Loading weights:  11%|█         | 42/393 [00:00<00:03, 89.23it/s]Loading weights:  15%|█▍        | 58/393 [00:00<00:03, 108.26it/s]Loading weights:  18%|█▊        | 70/393 [00:00<00:03, 101.95it/s]Loading weights:  21%|██        | 81/393 [00:00<00:03, 103.49it/s]Loading weights:  23%|██▎       | 92/393 [00:00<00:02, 103.91it/s]Loading weights:  27%|██▋       | 105/393 [00:01<00:02, 108.99it/s]Loading weights:  30%|██▉       | 116/393 [00:01<00:02, 94.68it/s] Loading weights:  32%|███▏      | 126/393 [00:01<00:03, 77.93it/s]Loading weights:  34%|███▍      | 135/393 [00:01<00:03, 72.23it/s]Loading weights:  37%|███▋      | 144/393 [00:01<00:03, 71.85it/s]Loading weights:  39%|███▉      | 154/393 [00:01<00:03, 78.28it/s]Loading weights:  44%|████▍     | 172/393 [00:01<00:02, 94.76it/s]Loading weights: 100%|██████████| 393/393 [00:01<00:00, 197.55it/s]
+[61/100] D q001 gold@1  (64.8s)
+[62/100] D q004 gold@1  (11.1s)
+[63/100] D q007 gold@1  (11.2s)
+[64/100] D q013 gold@1  (11.9s)
+[65/100] D q015 gold@- refused (10.9s)
+[66/100] D q017 gold@1  (11.6s)
+[67/100] D q019 gold@5  (11.8s)
+[68/100] D q035 gold@9 refused (10.8s)
+[69/100] D q037 gold@1  (10.4s)
+[70/100] D q038 gold@1  (12.8s)
+[71/100] D q039 gold@1  (13.1s)
+[72/100] D q041 gold@2  (12.6s)
+[73/100] D q043 gold@1  (12.2s)
+[74/100] D q045 gold@1  (12.1s)
+[75/100] D q046 gold@1  (11.1s)
+[76/100] D q049 gold@6 refused (11.0s)
+[77/100] D q051 gold@- refused (11.3s)
+[78/100] D q053 gold@- refused (11.3s)
+[79/100] D q056 gold@- refused (18.7s)
+[80/100] D q058 gold@- refused (16.4s)
+[81/100] E q001 gold@1  (14.9s)
+[82/100] E q004 gold@1  (16.9s)
+[83/100] E q007 gold@1  (17.8s)
+[84/100] E q013 gold@1  (35.8s)
+[85/100] E q015 gold@5  (25.3s)
+[86/100] E q017 gold@1  (32.7s)
+[87/100] E q019 gold@1  (35.5s)
+[88/100] E q035 gold@1  (20.2s)
+[89/100] E q037 gold@1  (43.7s)
+[90/100] E q038 gold@1  (23.6s)
+[91/100] E q039 gold@1  (29.9s)
+[92/100] E q041 gold@2  (38.7s)
+[93/100] E q043 gold@1  (36.9s)
+[94/100] E q045 gold@1  (28.7s)
+[95/100] E q046 gold@1  (79.0s)
+[96/100] E q049 gold@1  (36.7s)
+[97/100] E q051 gold@- refused (22.8s)
+[98/100] E q053 gold@- refused (17.6s)
+[99/100] E q056 gold@- refused (20.6s)
+[100/100] E q058 gold@- refused (19.0s)
+{"setup": "A", "questions": 20, "recall@5": "9/16 = 56%", "recall@5_cross_lingual": "0/7 = 0%", "mrr@10": "0.406", "median_search_s": "0.0"}
+{"setup": "B", "questions": 20, "recall@5": "16/16 = 100%", "recall@5_cross_lingual": "7/7 = 100%", "mrr@10": "0.891", "median_search_s": "0.0"}
+{"setup": "C", "questions": 20, "recall@5": "11/16 = 69%", "recall@5_cross_lingual": "2/7 = 29%", "mrr@10": "0.547", "median_search_s": "0.0", "correct_refusals": "4/4 = 100%", "false_refusals": "4/16 = 25%", "answers_citing_gold": "11/12 = 92%", "citation_precision": "14/22 = 64%", "median_llm_s": "4.4"}
+{"setup": "D", "questions": 20, "recall@5": "13/16 = 81%", "recall@5_cross_lingual": "4/7 = 57%", "mrr@10": "0.749", "median_search_s": "11.8", "correct_refusals": "4/4 = 100%", "false_refusals": "3/16 = 19%", "answers_citing_gold": "13/13 = 100%", "citation_precision": "19/23 = 83%", "median_llm_s": "5.5"}
+{"setup": "E", "questions": 20, "recall@5": "16/16 = 100%", "recall@5_cross_lingual": "7/7 = 100%", "mrr@10": "0.919", "median_search_s": "28.7", "correct_refusals": "4/4 = 100%", "false_refusals": "0/16 = 0%", "answers_citing_gold": "16/16 = 100%", "citation_precision": "21/27 = 78%", "median_llm_s": "4.6"}
+
+Results: C:\Users\dadab\OneDrive\Рабочий стол\plant-safety-rag\eval\results\dev_v3

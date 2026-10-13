@@ -59,10 +59,12 @@ def _cache_path(cache_dir: Path, request: dict[str, Any]) -> Path:
     return cache_dir / key[:2] / f"{key}.json"
 
 
-def call_llm_record(prompt: str, cfg: dict[str, Any], system: str | None = None) -> dict[str, Any]:
+def call_llm_record(prompt: str, cfg: dict[str, Any], system: str | None = None,
+                    json_schema: dict[str, Any] | None = None) -> dict[str, Any]:
     """Call the LLM (or read the cache). Returns the cached record plus "cached": True/False.
 
-    Identical requests are served from cache/llm/ and never paid for twice.
+    Identical requests are served from cache/llm/ and never paid for twice. With `json_schema` (a JSON Schema
+    dict) the model must answer with JSON matching it (structured output); parse it with `parse_json`.
     """
     llm = cfg["llm"]
     request = {
@@ -75,6 +77,8 @@ def call_llm_record(prompt: str, cfg: dict[str, Any], system: str | None = None)
     thinking = llm.get("thinking_level")
     if thinking:  # only part of the cache key when set, so older cached calls stay valid
         request["thinking_level"] = thinking
+    if json_schema:
+        request["json_schema"] = json_schema
     path = _cache_path(cfg["paths"]["llm_cache_dir"], request)
     if path.exists():
         return json.loads(path.read_text(encoding="utf-8")) | {"cached": True}
@@ -85,6 +89,8 @@ def call_llm_record(prompt: str, cfg: dict[str, Any], system: str | None = None)
         max_output_tokens=llm["max_output_tokens"],
         system_instruction=system,
         thinking_config=types.ThinkingConfig(thinking_level=thinking.upper()) if thinking else None,
+        response_mime_type="application/json" if json_schema else None,
+        response_json_schema=json_schema,
     )
     t0 = time.perf_counter()
     resp = call_with_retry(
@@ -121,6 +127,24 @@ def call_llm_record(prompt: str, cfg: dict[str, Any], system: str | None = None)
 def call_llm(prompt: str, cfg: dict[str, Any], system: str | None = None) -> str:
     """Return only the model's text answer (see call_llm_record)."""
     return call_llm_record(prompt, cfg, system)["text"]
+
+
+def parse_json(text: str) -> Any:
+    """JSON from a structured-output answer; tolerates a ```json fence. Raises ValueError if it is not JSON."""
+    t = text.strip()
+    if t.startswith("```"):
+        t = re.sub(r"^```(?:json)?\s*|\s*```$", "", t)
+    try:
+        return json.loads(t)
+    except json.JSONDecodeError as exc:
+        raise ValueError(f"model did not return valid JSON: {exc}") from exc
+
+
+def light_cfg(cfg: dict[str, Any], max_tokens: int = 1024) -> dict[str, Any]:
+    """Config for short helper calls (translation, rewriting, routing): low thinking, small output."""
+    tcfg = cfg["retrieval"]["query_translation"]
+    return {**cfg, "llm": {**cfg["llm"], "model": tcfg.get("model") or cfg["llm"]["model"],
+                           "thinking_level": tcfg.get("thinking_level"), "max_output_tokens": max_tokens}}
 
 
 # ------------------------------------------------------------------ query translation (setup E)

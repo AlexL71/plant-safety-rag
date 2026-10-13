@@ -1,0 +1,177 @@
+"""Evaluate the agent layer: routing, visuals, job plans and notices.
+
+    python -m plant_rag.eval_agent --part router --run agent_v1        # 36 requests, one light model call each
+    python -m plant_rag.eval_agent --part tasks --run agent_v1         # 12 visuals + 6 plans + 6 notices (searches)
+    python -m plant_rag.eval_agent --part all --run agent_v1
+
+Inputs: eval/agent/router_cases.jsonl (request + expected intent) and eval/agent/task_cases.jsonl.
+Outputs in eval/results/<run>/: router.jsonl, tasks.jsonl (one row per case, with the produced visual / plan /
+notice, its evidence ids and the automatic check statistics), and summary.json.
+
+Automatic metrics (no human needed):
+- router: accuracy and a confusion table per intent.
+- visuals: produced %, requested type produced %, elements kept after the citation check + numbers guard.
+- plans: produced %, expected hazard groups covered (keyword match in hazard names and controls), items kept.
+- notices: produced %, lines kept, translation numbers preserved (line checks).
+Faithfulness of what is shown (does each element match its cited passage?) is graded separately with
+eval/faithfulness_rubric.md and stored next to these files.
+Rows already in the output files are skipped, so an interrupted run resumes.
+"""
+from __future__ import annotations
+
+import argparse
+import json
+import logging
+import sys
+import time
+from collections import Counter, defaultdict
+from pathlib import Path
+from typing import Any
+
+from plant_rag import agent
+from plant_rag.config import REPO_ROOT, load_config
+from plant_rag.notices import translate_notice
+from plant_rag.retrieve import Retriever
+
+log = logging.getLogger(__name__)
+
+
+def read_jsonl(path: Path) -> list[dict]:
+    if not path.exists():
+        return []
+    with open(path, encoding="utf-8") as f:
+        return [json.loads(line) for line in f if line.strip()]
+
+
+def run_router(cfg: dict[str, Any], out: Path) -> list[dict]:
+    cases = read_jsonl(REPO_ROOT / "eval/agent/router_cases.jsonl")
+    done = {r["id"]: r for r in read_jsonl(out)}
+    rows = []
+    with open(out, "a", encoding="utf-8") as f:
+        for c in cases:
+            if c["id"] in done:
+                rows.append(done[c["id"]])
+                continue
+            t0 = time.perf_counter()
+            r = agent.route_request(c["text"], cfg)
+            row = {**c, "predicted": r["intent"], "visual_type": r["visual_type"], "reason": r["reason"],
+                   "correct": r["intent"] == c["intent"], "seconds": round(time.perf_counter() - t0, 2)}
+            f.write(json.dumps(row, ensure_ascii=False) + "\n")
+            f.flush()
+            rows.append(row)
+            print(f"{c['id']} {c['intent']:>9} -> {r['intent']:<9} {'ok' if row['correct'] else 'WRONG'}", flush=True)
+    return rows
+
+
+def _hazard_coverage(plan: dict | None, groups: list[list[str]]) -> tuple[int, int]:
+    if not plan:
+        return 0, len(groups)
+    text = " ".join([h["hazard"] + " " + " ".join(c["text"] for c in h["controls"]) for h in plan.get("hazards", [])]
+                    + [x["text"] for k in agent.PLAN_LISTS for x in plan.get(k, [])]).lower()
+    return sum(1 for g in groups if any(w.lower() in text for w in g)), len(groups)
+
+
+def run_tasks(cfg: dict[str, Any], out: Path, setup: str) -> list[dict]:
+    cases = read_jsonl(REPO_ROOT / "eval/agent/task_cases.jsonl")
+    done = {r["id"]: r for r in read_jsonl(out)}
+    retriever = None
+    rows = []
+    with open(out, "a", encoding="utf-8") as f:
+        for c in cases:
+            if c["id"] in done:
+                rows.append(done[c["id"]])
+                continue
+            retriever = retriever or Retriever(cfg)
+            t0 = time.perf_counter()
+            res = agent.run(c["text"], [], retriever, cfg, setup, mode=c["mode"], lang=c["lang"])
+            hits = res.pop("evidence_hits", [])
+            row = {**c, "intent": res["intent"], "refused": res.get("refused"), "reason": res.get("reason"),
+                   "evidence": [h.chunk["chunk_id"] for h in hits], "seconds": round(time.perf_counter() - t0, 1)}
+            if c["part"] == "visual":
+                v = res.get("visual")
+                row |= {"answer": res.get("text"), "visual": v, "visual_check": res.get("visual_check", {}),
+                        "visual_reason": res.get("visual_reason", ""), "produced": bool(v),
+                        "type_ok": bool(v) and v["type"] == c["expect_type"]}
+            elif c["part"] == "plan":
+                plan = res.get("plan")
+                cov, total = _hazard_coverage(plan, c["expect_hazards"])
+                row |= {"plan": plan, "plan_check": res.get("plan_check", {}), "produced": bool(plan),
+                        "hazards_searched": res.get("hazards_searched", []), "coverage": [cov, total]}
+            else:
+                content = res.get("notice_content")
+                row |= {"notice": content, "notice_check": res.get("notice_check", {}), "produced": bool(content)}
+                if content and c.get("lang2"):
+                    tr = translate_notice(content, c["lang2"], cfg)
+                    row |= {"translation": tr["translation"], "line_checks": tr["line_checks"], "translation_ok": tr["ok"]}
+            f.write(json.dumps(row, ensure_ascii=False) + "\n")
+            f.flush()
+            rows.append(row)
+            print(f"{c['id']} {c['part']:<6} produced={row.get('produced')} ({row['seconds']}s)", flush=True)
+    return rows
+
+
+def summarize(router: list[dict], tasks: list[dict]) -> dict[str, Any]:
+    s: dict[str, Any] = {}
+    if router:
+        conf: dict[str, Counter] = defaultdict(Counter)
+        for r in router:
+            conf[r["intent"]][r["predicted"]] += 1
+        s["router"] = {"accuracy": f"{sum(r['correct'] for r in router)}/{len(router)}",
+                       "by_language": {lang: f"{sum(r['correct'] for r in router if r['lang'] == lang)}/"
+                                             f"{sum(1 for r in router if r['lang'] == lang)}" for lang in ("ko", "en")},
+                       "confusion": {k: dict(v) for k, v in conf.items()}}
+
+    def checks(rows: list[dict], key: str) -> dict[str, int]:
+        total: Counter = Counter()
+        for r in rows:
+            total.update(r.get(key) or {})
+        return dict(total)
+
+    vis = [r for r in tasks if r["part"] == "visual"]
+    if vis:
+        s["visuals"] = {"produced": f"{sum(r['produced'] for r in vis)}/{len(vis)}",
+                        "requested_type": f"{sum(r['type_ok'] for r in vis)}/{len(vis)}",
+                        "elements": checks(vis, "visual_check"),
+                        "not_produced": {r["id"]: r.get("visual_reason") or r.get("reason") for r in vis if not r["produced"]}}
+    plans = [r for r in tasks if r["part"] == "plan"]
+    if plans:
+        s["plans"] = {"produced": f"{sum(r['produced'] for r in plans)}/{len(plans)}",
+                      "hazard_groups_covered": f"{sum(r['coverage'][0] for r in plans)}/{sum(r['coverage'][1] for r in plans)}",
+                      "items": checks(plans, "plan_check")}
+    notes = [r for r in tasks if r["part"] == "notice"]
+    if notes:
+        lc = [c for r in notes for c in r.get("line_checks", [])]
+        s["notices"] = {"produced": f"{sum(r['produced'] for r in notes)}/{len(notes)}",
+                        "lines": checks(notes, "notice_check"),
+                        "translations_all_numbers_kept": f"{sum(1 for r in notes if r.get('translation_ok'))}/"
+                                                         f"{sum(1 for r in notes if 'translation_ok' in r)}",
+                        "translated_lines_numbers_kept": f"{sum(c['ok'] for c in lc)}/{len(lc)}"}
+    secs = [r["seconds"] for r in tasks]
+    if secs:
+        s["median_seconds"] = {p: sorted(r["seconds"] for r in tasks if r["part"] == p)[len([r for r in tasks if r["part"] == p]) // 2]
+                               for p in ("visual", "plan", "notice") if any(r["part"] == p for r in tasks)}
+    return s
+
+
+def main() -> None:
+    if hasattr(sys.stdout, "reconfigure"):
+        sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+    ap = argparse.ArgumentParser(description="Evaluate SafetyAgent's router, visuals, plans and notices.")
+    ap.add_argument("--config", default="configs/config.yaml")
+    ap.add_argument("--part", choices=["router", "tasks", "all"], default="all")
+    ap.add_argument("--run", required=True)
+    ap.add_argument("--setup", default="E")
+    args = ap.parse_args()
+    logging.basicConfig(level=logging.WARNING, format="%(levelname)s %(name)s: %(message)s")
+    cfg = load_config(args.config)
+    run_dir = REPO_ROOT / "eval" / "results" / args.run
+    run_dir.mkdir(parents=True, exist_ok=True)
+    router = run_router(cfg, run_dir / "router.jsonl") if args.part in ("router", "all") else read_jsonl(run_dir / "router.jsonl")
+    tasks = run_tasks(cfg, run_dir / "tasks.jsonl", args.setup) if args.part in ("tasks", "all") else read_jsonl(run_dir / "tasks.jsonl")
+    summary = summarize(router, tasks)
+    (run_dir / "summary.json").write_text(json.dumps(summary, ensure_ascii=False, indent=2), encoding="utf-8")
+    print(json.dumps(summary, ensure_ascii=False, indent=2))
+
+
+if __name__ == "__main__":
+    main()
