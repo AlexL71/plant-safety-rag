@@ -9,6 +9,27 @@ paths:
   embedding_cache: index/embedding_cache.sqlite
   llm_cache_dir: cache/llm
 
+ingest:
+  space_gap_ratio: 0.15               # insert a space where the gap between two characters > ratio x font size
+  page_number_rows: 2                 # page numbers are removed only in the first/last N rows of a page
+  header_edge_rows: 3                 # only the first/last N rows can be running headers/footers
+  header_repeat_min_pages: 3          # repeats needed (same text, same height); the very first/last row needs only 2
+  header_repeat_ratio: 0.25           # digit-normalized repeats (e.g. "Frm 00360") also need this share of pages
+  min_page_chars: 30                  # pages with less text are logged as scanned/empty and skipped
+  unreadable_placeholder: "[수식]"     # replaces runs of undecodable equation glyphs (HWP equation font)
+
+chunking:
+  tokenizer: BAAI/bge-reranker-v2-m3  # chunk sizes are counted with the reranker's tokenizer
+  max_tokens: 500                     # longer clauses are split at sub-items, then into windows
+  overlap_tokens: 50                  # overlap between windows of one long clause
+  min_chars: 20                       # drop near-empty chunks (e.g. a heading with no text)
+  toc_min_leader_lines: 3             # pages with this many "······" lines are tables of contents: skipped
+  doc_types:                          # doc_id prefix -> clause rules (unknown prefixes use "booklet")
+    KOSHA-: kosha
+    KR-RULE-: kr_law
+    CFR-: cfr
+    OSHA-: booklet
+
 api_key:
   env_var: GEMINI_API_KEY             # takes priority if set
   file: secrets/gemini_api_key.txt    # never printed, logged or committed
