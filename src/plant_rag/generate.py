@@ -142,6 +142,32 @@ def translate_query(question: str, target_lang: str, cfg: dict[str, Any]) -> str
     return call_llm_record(prompt, sub)["text"].strip()
 
 
+CONDENSE_PROMPT = """You rewrite follow-up questions in a chat about industrial process-safety documents.
+Given the earlier conversation and the new message, write ONE self-contained question that can be searched
+without the conversation (resolve "it", "that", "and for tanks?" etc.). Keep the language of the new message,
+keep numbers, units and technical terms. If the new message is already self-contained, return it unchanged.
+Output only the question.
+
+Conversation:
+{history}
+
+New message: {question}"""
+
+
+def condense_question(question: str, history: list[tuple[str, str]], cfg: dict[str, Any]) -> str:
+    """Turn a chat follow-up into a standalone question (one cached LLM call). `history` = [(question, answer), ...]."""
+    if not history:
+        return question
+    turns = []
+    for q, a in history[-3:]:  # the last few exchanges are enough context
+        turns.append(f"User: {q}\nAssistant: {re.sub(r'\s*\[\d+\]', '', a)[:600]}")
+    tcfg = cfg["retrieval"]["query_translation"]  # same light settings as translation
+    sub = {**cfg, "llm": {**cfg["llm"], "model": tcfg.get("model") or cfg["llm"]["model"],
+                          "thinking_level": tcfg.get("thinking_level"), "max_output_tokens": 1024}}
+    out = call_llm_record(CONDENSE_PROMPT.format(history="\n\n".join(turns), question=question), sub)["text"].strip()
+    return out or question
+
+
 # ------------------------------------------------------------------ answering
 
 @dataclass

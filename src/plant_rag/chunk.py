@@ -50,6 +50,9 @@ class Line:
     font: str
     bold: bool
     y0: float = 0.0
+    x0: float = 0.0
+    x1: float = 0.0
+    y1: float = 0.0
 
 
 @dataclass
@@ -306,7 +309,8 @@ def _hard_split(ln: Line, max_tokens: int, overlap: int, tok_name: str) -> list[
     parts = []
     for s in range(0, len(offs), step):
         e = min(s + max_tokens, len(offs))
-        parts.append(Line(ln.text[offs[s][0]: offs[e - 1][1]], ln.page, ln.size, ln.font, ln.bold))
+        parts.append(Line(ln.text[offs[s][0]: offs[e - 1][1]], ln.page, ln.size, ln.font, ln.bold,
+                          ln.y0, ln.x0, ln.x1, ln.y1))
         if e == len(offs):
             break
     return parts
@@ -420,7 +424,8 @@ def chunk_document(doc_id: str, pages: list[dict], meta: dict[str, str], cfg: di
     kind = doc_type_for(doc_id, cfg)
     min_leaders = int(cfg["chunking"]["toc_min_leader_lines"])
     n_pages = max(p["page"] for p in pages)
-    lines = [Line(TOC_LEADER.sub(" ... ", r["text"]).strip(), p["page"], r["size"], r["font"], r["bold"], r["y0"])
+    lines = [Line(TOC_LEADER.sub(" ... ", r["text"]).strip(), p["page"], r["size"], r["font"], r["bold"], r["y0"],
+                  r["x0"], r["x1"], r["y1"])
              for p in sorted(pages, key=lambda p: p["page"]) if not _is_toc_page(p, n_pages, min_leaders)
              for r in p["lines"] if TOC_LEADER.sub("", r["text"]).strip()]
     sections = SPLITTERS[kind](lines, doc_id)
@@ -447,6 +452,10 @@ def chunk_document(doc_id: str, pages: list[dict], meta: dict[str, str], cfg: di
                 "n_tokens": count_tokens(text, tok),
                 "text": text,
                 "text_hash": hashlib.sha256(text.encode("utf-8")).hexdigest(),
+                # where the chunk sits in the PDF: one [page, x0, y0, x1, y1] box per line (PDF points),
+                # used by the app to outline the passage on the original page
+                "boxes": [[ln.page, round(ln.x0, 1), round(ln.y0, 1), round(ln.x1, 1), round(ln.y1, 1)]
+                          for ln in ch.lines],
             })
     return records
 

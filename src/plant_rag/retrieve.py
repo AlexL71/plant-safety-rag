@@ -16,7 +16,7 @@ import json
 import logging
 import time
 from dataclasses import dataclass, field
-from typing import Any
+from typing import Any, Callable
 
 import faiss
 import numpy as np
@@ -89,7 +89,11 @@ class Retriever:
             if rc["device"] == "cpu":
                 torch.set_num_threads(int(rc.get("num_threads") or 0) or os.cpu_count() or 1)
             t0 = time.perf_counter()
-            self._reranker = CrossEncoder(rc["model"], max_length=int(rc["max_length"]), device=rc["device"])
+            kwargs = dict(max_length=int(rc["max_length"]), device=rc["device"])
+            try:  # use the local copy without asking the Hugging Face Hub (saves ~25 s at start-up)
+                self._reranker = CrossEncoder(rc["model"], local_files_only=True, **kwargs)
+            except Exception:  # not downloaded yet: download once (~2.3 GB)
+                self._reranker = CrossEncoder(rc["model"], **kwargs)
             log.info("Reranker loaded in %.1fs", time.perf_counter() - t0)
         return self._reranker
 
@@ -127,7 +131,8 @@ class Retriever:
         return pool
 
     # ------------------------------------------------------------ main entry
-    def search(self, query: str, setup: str | None = None, k: int | None = None) -> list[Hit]:
+    def search(self, query: str, setup: str | None = None, k: int | None = None,
+               on_stage: Callable[[str], None] | None = None) -> list[Hit]:
         """Return the top-k hits for `query` under `setup` (A–E). Stage times go to self.timings.
 
         Setup E ("translate": true) also translates the question into the other corpus language (one cached
@@ -139,12 +144,14 @@ class Retriever:
         k = k or int(self.rcfg["final_k"])
         self.timings = {}
         lists: dict[str, list[tuple[int, float]]] = {}
+        report = on_stage or (lambda name: None)  # progress hook for the web app
 
         queries = {"orig": query}
         rerank_query: str | dict[str, str] = query
         if s.get("translate"):
             from plant_rag.generate import detect_lang, translate_query
 
+            report("translate")
             t0 = time.perf_counter()
             q_lang = detect_lang(query)
             other = "en" if q_lang == "ko" else "ko"
@@ -154,6 +161,7 @@ class Retriever:
             rerank_query = {q_lang: query, other: translated}
             self.last_translation = translated
 
+        report("search")
         for tag, q in queries.items():
             suffix = "" if tag == "orig" else "_tr"
             if s["bm25"]:
@@ -178,6 +186,7 @@ class Retriever:
 
         if s["rerank"]:
             cands = self._rerank_pool(ranked, lists)
+            report("rerank")
             t0 = time.perf_counter()
             scores = self.rerank(rerank_query, cands) if cands else []
             self.timings["rerank"] = time.perf_counter() - t0
