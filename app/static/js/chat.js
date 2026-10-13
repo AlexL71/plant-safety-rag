@@ -7,6 +7,7 @@ const EXAMPLES = [
   ["English → Korean guide", "How long must completed work permits be kept?"],
   ["US PSM", "What must a pre-startup safety review confirm before highly hazardous chemicals are introduced?"],
 ];
+const FINISH_PAUSE_MS = 900;  // how long the all-green checklist stays visible before the answer
 const STAGES = {
   condense: "Understanding your follow-up",
   translate: "Translating the question (KO ↔ EN)",
@@ -93,22 +94,33 @@ function addBot() {
   const t0 = Date.now();
   let timer = null;
 
-  function renderSteps() {
+  /* finished = true: every step shows a green check (shown briefly before the answer appears). */
+  function renderSteps(finished = false) {
     const order = Object.keys(STAGES).filter((s) => seen.includes(s) || ["search", "rerank", "answer"].includes(s));
-    const active = seen.length ? seen[seen.length - 1] : order[0];  // before the first event: first step is running
-    bubble.innerHTML = `<div class="steps">${order.map((s) => {
-      const state = s === active ? "now" : seen.includes(s) ? "done" : "todo";
+    const active = finished ? null : seen.length ? seen[seen.length - 1] : order[0];  // first step runs before any event
+    const secs = ((Date.now() - t0) / 1000).toFixed(0);
+    bubble.innerHTML = `<div class="steps ${finished ? "finished" : ""}">${order.map((s) => {
+      const state = finished || (seen.includes(s) && s !== active) ? "done" : s === active ? "now" : "todo";
       const icon = state === "now" ? `<div class="spinner"></div>` : state === "done" ? `<span class="ck">✓</span>` : `<span class="dot"></span>`;
       return `<div class="step ${state}">${icon}<span>${STAGES[s]}</span></div>`;
-    }).join("")}</div><div class="meta-line"><span id="elapsed">${((Date.now() - t0) / 1000).toFixed(0)} s</span>
-      <span>· searching ~1,155 clauses in 10 documents</span></div>`;
+    }).join("")}</div><div class="meta-line">${finished
+      ? `<span class="chip ok">✓ Done in ${secs} s</span>`
+      : `<span>${secs} s</span><span>· searching ~1,155 clauses in 10 documents</span>`}</div>`;
   }
 
   return {
     start() { renderSteps(); timer = setInterval(renderSteps, 1000); },
     stage(s) { if (!seen.includes(s)) seen.push(s); renderSteps(); scrollDown(); },
-    done(m) {
-      clearInterval(timer);
+    /* Live answers first show all steps checked for a moment; answers loaded from history appear at once. */
+    async done(m) {
+      if (timer) {
+        clearInterval(timer);
+        timer = null;
+        renderSteps(true);
+        scrollDown();
+        await new Promise((r) => setTimeout(r, FINISH_PAUSE_MS));
+      }
+      bubble.classList.add("reveal");
       const passages = m.passages || {};
       const lang = m.lang === "ko" ? "Korean" : "English";
       if (m.refused) {
@@ -149,15 +161,17 @@ async function ask(question) {
     const bot = addBot();
     bot.start();
     scrollDown();
+    let shown = null;  // finishes after the checklist pause and the answer render
     try {
       await DA.stream(`/api/chats/${current}/ask`, { question }, (ev) => {
         if (ev.type === "stage") bot.stage(ev.stage);
-        else if (ev.type === "done") bot.done(ev.message);
+        else if (ev.type === "done") shown = bot.done(ev.message);
         else if (ev.type === "error") bot.error(ev.detail);
       });
     } catch (err) {
       bot.error(err.message);
     }
+    if (shown) await shown;
     scrollDown();
     loadChats();
   } finally {
