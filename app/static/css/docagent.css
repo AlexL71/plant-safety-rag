@@ -23,6 +23,7 @@
   --font: "Pretendard Variable", Pretendard, -apple-system, "Segoe UI", "Malgun Gothic", sans-serif;
 }
 * { box-sizing: border-box; }
+[hidden] { display: none !important; }  /* class rules like .login { display: grid } must not override hidden */
 html, body { margin: 0; height: 100%; }
 body { font-family: var(--font); color: var(--ink); background: var(--bg); font-size: 15px; line-height: 1.6;
        -webkit-font-smoothing: antialiased; }

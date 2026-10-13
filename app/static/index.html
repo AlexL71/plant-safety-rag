@@ -85,7 +85,7 @@
   <div class="wrap">
     <a href="/" aria-label="DocAgent home"><img class="logo" src="/brand/docagent_logo.svg" alt="DocAgent"></a>
     <div class="links"><a href="#what">Product</a><a href="#modules">Modules</a><a href="#results">Results</a></div>
-    <div class="cta"><a class="btn btn-ghost btn-sm" href="/admin">Admin</a><a class="btn btn-primary btn-sm" href="/chat">Start asking</a></div>
+    <div class="cta"><a class="btn btn-ghost btn-sm" href="/admin" id="adminLink">Admin</a><a class="btn btn-primary btn-sm" href="/chat">Start asking</a></div>
   </div>
 </nav>
 
@@ -197,6 +197,15 @@
   </div>
 </section>
 
+<script>
+  // When an admin is signed in, say so in the nav instead of offering a sign-in
+  fetch("/api/admin/me", { credentials: "same-origin" }).then((r) => r.ok ? r.json() : null).then((me) => {
+    if (!me) return;
+    const a = document.getElementById("adminLink");
+    a.innerHTML = `<span style="color:var(--ok)">●</span> Admin console · ${me.username.replace(/[<>&"']/g, "")}`;
+    a.title = "You are signed in as admin";
+  }).catch(() => {});
+</script>
 <footer>
   <div class="wrap"><span>© DocAgent</span><span>DocAgent is a reference tool. It does not replace engineering judgment, legal advice or formal safety review.</span></div>
 </footer>

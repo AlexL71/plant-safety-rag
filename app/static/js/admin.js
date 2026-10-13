@@ -43,8 +43,10 @@ $("loginForm").addEventListener("submit", async (e) => {
 $("logout").onclick = async () => { await DA.api("/api/admin/logout", { method: "POST" }); location.reload(); };
 
 function showApp(name) {
+  $("loginView").hidden = true;
   $("appView").hidden = false;
-  $("who").textContent = `Signed in as ${name}`;
+  $("who").textContent = name;
+  $("avatar").textContent = (name || "?").slice(0, 1);
   document.querySelectorAll(".tab").forEach((t) => { t.onclick = () => go(t.dataset.tab); });
   go(location.hash.slice(1) || "overview");
 }

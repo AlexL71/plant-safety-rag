@@ -21,6 +21,13 @@
   .tab { border: none; background: none; padding: 8px 14px; border-radius: 999px; color: var(--ink-2); font-weight: 600; font-size: 14px; }
   .tab:hover { background: var(--bg); } .tab.active { background: var(--brand-50); color: var(--brand); }
   .top .right { margin-left: auto; display: flex; gap: 12px; align-items: center; font-size: 13px; color: var(--ink-2); }
+  .account { display: flex; align-items: center; gap: 10px; padding: 4px 12px 4px 4px; border: 1px solid var(--line);
+             border-radius: 999px; background: var(--surface); }
+  .account .avatar { width: 30px; height: 30px; border-radius: 50%; background: var(--brand); color: #fff; display: grid;
+                     place-items: center; font-weight: 700; font-size: 13px; text-transform: uppercase; }
+  .account .nm { font-weight: 700; color: var(--ink); line-height: 1.15; }
+  .account .role { font-size: 11.5px; color: var(--ok); line-height: 1.15; }
+  .account .role::before { content: "●"; margin-right: 4px; }
   .page-wrap { max-width: 1280px; margin: 0 auto; padding: 28px 24px 60px; }
   .h { display: flex; align-items: baseline; gap: 12px; margin-bottom: 18px; } .h h2 { font-size: 22px; }
   .tiles { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; }
@@ -85,7 +92,13 @@
       <button class="tab" data-tab="docs">Documents</button>
       <button class="tab" data-tab="settings">Settings</button>
     </nav>
-    <div class="right"><span id="who"></span><button class="btn btn-ghost btn-sm" id="logout" type="button">Sign out</button></div>
+    <div class="right">
+      <div class="account" title="You are signed in">
+        <span class="avatar" id="avatar">A</span>
+        <span><span class="nm" id="who"></span><br><span class="role">Signed in · Administrator</span></span>
+      </div>
+      <button class="btn btn-ghost btn-sm" id="logout" type="button">Sign out</button>
+    </div>
   </div></div>
   <div class="page-wrap" id="content"></div>
 </div>
