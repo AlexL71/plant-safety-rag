@@ -12,6 +12,9 @@ index/
 cache/
 private/
 
+# --- Private planning notes (name the target company; repo is public) ---
+plan.md
+
 # --- Python / Jupyter ---
 __pycache__/
 *.pyc
