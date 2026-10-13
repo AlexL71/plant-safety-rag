@@ -1,0 +1,29 @@
+# --- Secrets: never commit (repo is public) ---
+secrets/
+*api*key*
+*.key
+.env
+.env.*
+
+# --- Data and generated files (copyrighted or large) ---
+data/raw/
+data/processed/
+index/
+cache/
+private/
+
+# --- Python / Jupyter ---
+__pycache__/
+*.pyc
+.ipynb_checkpoints/
+.venv/
+venv/
+*.egg-info/
+build/
+
+# --- OS / editors ---
+Thumbs.db
+desktop.ini
+.DS_Store
+.vscode/
+.idea/

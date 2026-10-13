@@ -1,0 +1,27 @@
+# Install CPU-only PyTorch FIRST (needed only for the local reranker):
+#   pip install torch --index-url https://download.pytorch.org/whl/cpu
+# Then:
+#   pip install -r requirements.txt
+#   pip install -e .
+
+# Gemini API (answers + embeddings)
+google-genai>=1.30
+# Config
+pyyaml>=6.0
+# PDF text extraction
+pymupdf>=1.24
+# Korean tokenizer for BM25
+kiwipiepy>=0.20
+# Keyword search
+rank-bm25>=0.2.2
+# Vector index
+faiss-cpu>=1.9
+numpy>=1.26
+# Reranker (bge-reranker-v2-m3, CPU)
+sentence-transformers>=3.0
+# Evaluation tables, notebooks, demo
+pandas>=2.2
+matplotlib>=3.8
+ipykernel>=6.29
+tqdm>=4.66
+streamlit>=1.38

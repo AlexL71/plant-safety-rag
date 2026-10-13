@@ -1,0 +1,31 @@
+# All tunable settings live here. Paths are relative to the repo root.
+# Sections for chunking, retrieval and evaluation are added in their phases.
+
+paths:
+  raw_dir: data/raw
+  processed_dir: data/processed
+  manifest: data/manifest.csv
+  index_dir: index
+  embedding_cache: index/embedding_cache.sqlite
+  llm_cache_dir: cache/llm
+
+api_key:
+  env_var: GEMINI_API_KEY             # takes priority if set
+  file: secrets/gemini_api_key.txt    # never printed, logged or committed
+
+llm:
+  model: gemini-3.8-flash             # gemini-2.5-flash is closed to new keys; list models: python -m plant_rag.smoke_test --list-models
+  temperature: 0.0
+  max_output_tokens: 2048
+
+embedding:
+  model: gemini-embedding-001
+  output_dim: 768                     # smaller than the default 3072; vectors are L2-normalized in code
+  batch_size: 50                      # texts per API request (keep <= 100)
+
+api:
+  timeout_s: 60                       # per request
+  max_retries: 5                      # on 429 / 5xx / network errors
+  backoff_base_s: 2.0                 # wait = base * 2^attempt (+ jitter), capped below
+  backoff_max_s: 60.0
+  min_interval_s: 0.5                 # minimum gap between any two API calls
