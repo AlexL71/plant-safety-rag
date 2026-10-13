@@ -16,7 +16,7 @@ import re
 import threading
 import uuid
 from pathlib import Path
-from typing import Any
+from typing import Any, Literal
 
 from fastapi import Depends, FastAPI, HTTPException, Request, Response
 from fastapi.responses import FileResponse, JSONResponse, StreamingResponse
@@ -82,13 +82,15 @@ def public_message(m: dict[str, Any], admin: bool = False) -> dict[str, Any]:
     return out
 
 
-def stream_answer(question: str, history: list[tuple[str, str]], setup: str, on_done, on_error=None) -> StreamingResponse:
+def stream_answer(question: str, history: list[tuple[str, str]], setup: str, on_done, on_error=None,
+                  answer_lang: str | None = None) -> StreamingResponse:
     """Run the pipeline in a worker thread and stream its stages as Server-Sent Events."""
     q: queue.Queue = queue.Queue()
 
     def worker() -> None:
         try:
-            res = engine.run(question, history, setup, on_stage=lambda s: q.put({"type": "stage", "stage": s}))
+            res = engine.run(question, history, setup, on_stage=lambda s: q.put({"type": "stage", "stage": s}),
+                             answer_lang=answer_lang)
             q.put({"type": "done", "message": on_done(res)})
         except Exception as exc:  # reported to the browser; details in the server log
             log.exception("Answering failed")
@@ -112,6 +114,7 @@ def stream_answer(question: str, history: list[tuple[str, str]], setup: str, on_
 
 class AskBody(BaseModel):
     question: str = Field(min_length=1)
+    lang: Literal["auto", "ko", "en"] = "auto"  # answer language; "auto" = same as the question
 
 
 class AdminAskBody(BaseModel):
@@ -209,7 +212,8 @@ def ask(chat_id: str, body: AskBody, uid: str = Depends(user_id)) -> StreamingRe
     def on_error(detail: str) -> None:  # keep the chat consistent: every question gets a reply
         store.add_message(chat_id, "assistant", detail, {"error": True, "refused": True, "reason": "error"})
 
-    return stream_answer(question, history, user_setup(), on_done, on_error)
+    return stream_answer(question, history, user_setup(), on_done, on_error,
+                         answer_lang=None if body.lang == "auto" else body.lang)
 
 
 @app.get("/api/passages/{chunk_id}")

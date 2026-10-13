@@ -231,8 +231,10 @@ def refusal_threshold(cfg: dict[str, Any], setup: str | None = None) -> float:
     return float(t)
 
 
-def answer(question: str, hits: list[Hit], cfg: dict[str, Any], setup: str | None = None) -> Answer:
-    lang = detect_lang(question)
+def answer(question: str, hits: list[Hit], cfg: dict[str, Any], setup: str | None = None,
+           lang: str | None = None) -> Answer:
+    """`lang` ("ko" / "en") forces the answer language; None answers in the question's language."""
+    lang = lang if lang in LANG_NAME else detect_lang(question)
     if not hits:
         return Answer(question, lang, NOT_FOUND[lang], True, "no_hits")
     top = hits[0].rerank_score

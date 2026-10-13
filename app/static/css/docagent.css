@@ -109,6 +109,6 @@ h1, h2, h3 { line-height: 1.2; letter-spacing: -.02em; margin: 0; }
 @keyframes flash { 0% { box-shadow: 0 0 0 0 rgba(0, 163, 224, .55); } 100% { box-shadow: 0 0 0 14px rgba(0, 163, 224, 0); } }
 
 /* ---------- logo ---------- */
-.logo { height: 34px; display: block; }
-.logo-sm { height: 28px; }
+.logo { height: 44px; display: block; }
+.logo-sm { height: 38px; }
 .icon-logo { width: 30px; height: 30px; display: block; }

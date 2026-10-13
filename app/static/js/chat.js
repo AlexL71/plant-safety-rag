@@ -8,6 +8,8 @@ const EXAMPLES = [
   ["US PSM", "What must a pre-startup safety review confirm before highly hazardous chemicals are introduced?"],
 ];
 const FINISH_PAUSE_MS = 900;  // how long the all-green checklist stays visible before the answer
+const FADE_MS = 180;          // checklist fade-out before the answer appears
+const LANGS = ["auto", "ko", "en"];  // answer language: auto = same language as the question
 const STAGES = {
   condense: "Understanding your follow-up",
   translate: "Translating the question (KO ↔ EN)",
@@ -22,6 +24,8 @@ const popover = new DA.Popover((p) => viewer.open({ chunk_id: p.chunk_id }));
 let current = null;     // current chat id (null = new, not created yet)
 let busy = false;
 let maxChats = 50;
+let answerLang = "auto";
+try { if (LANGS.includes(localStorage.getItem("da_lang"))) answerLang = localStorage.getItem("da_lang"); } catch (_) {}
 
 /* ---------------------------------------------------------------- sidebar */
 async function loadChats() {
@@ -74,6 +78,7 @@ async function openChat(id) {
 }
 
 /* ---------------------------------------------------------------- messages */
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 function scrollDown() { const s = $("scroll"); s.scrollTop = s.scrollHeight; }
 
 function addUser(text) {
@@ -94,18 +99,38 @@ function addBot() {
   const t0 = Date.now();
   let timer = null;
 
-  /* finished = true: every step shows a green check (shown briefly before the answer appears). */
+  /* The step list is built once and then only updated in place (class changes, new rows), so spinners keep
+     turning and nothing flickers. finished = true: every step gets a green check before the answer appears. */
   function renderSteps(finished = false) {
+    let list = bubble.querySelector(".steps");
+    const firstRender = !list;
+    if (firstRender) {
+      bubble.innerHTML = `<div class="steps"></div><div class="meta-line"><span class="elapsed">0 s</span>
+        <span class="note">· searching ~1,155 clauses in 10 documents</span></div>`;
+      list = bubble.querySelector(".steps");
+    }
     const order = Object.keys(STAGES).filter((s) => seen.includes(s) || ["search", "rerank", "answer"].includes(s));
     const active = finished ? null : seen.length ? seen[seen.length - 1] : order[0];  // first step runs before any event
-    const secs = ((Date.now() - t0) / 1000).toFixed(0);
-    bubble.innerHTML = `<div class="steps ${finished ? "finished" : ""}">${order.map((s) => {
+    order.forEach((s, i) => {
+      let row = list.querySelector(`[data-stage="${s}"]`);
+      if (!row) {  // optional steps (follow-up, translation) appear when the server reports them
+        row = document.createElement("div");
+        row.className = "step todo" + (firstRender ? "" : " enter");
+        row.dataset.stage = s;
+        row.innerHTML = `<span class="ic"><span class="dot"></span><span class="spinner"></span><span class="ck">✓</span></span>
+                         <span>${STAGES[s]}</span>`;
+        list.insertBefore(row, list.children[i] || null);
+      }
       const state = finished || (seen.includes(s) && s !== active) ? "done" : s === active ? "now" : "todo";
-      const icon = state === "now" ? `<div class="spinner"></div>` : state === "done" ? `<span class="ck">✓</span>` : `<span class="dot"></span>`;
-      return `<div class="step ${state}">${icon}<span>${STAGES[s]}</span></div>`;
-    }).join("")}</div><div class="meta-line">${finished
-      ? `<span class="chip ok">✓ Done in ${secs} s</span>`
-      : `<span>${secs} s</span><span>· searching ~1,155 clauses in 10 documents</span>`}</div>`;
+      if (!row.classList.contains(state)) { row.classList.remove("todo", "now", "done"); row.classList.add(state); }
+    });
+    const secs = ((Date.now() - t0) / 1000).toFixed(0);
+    if (finished) {
+      list.classList.add("finished");
+      bubble.querySelector(".meta-line").innerHTML = `<span class="chip ok">✓ Done in ${secs} s</span>`;
+    } else {
+      bubble.querySelector(".elapsed").textContent = `${secs} s`;
+    }
   }
 
   return {
@@ -118,7 +143,10 @@ function addBot() {
         timer = null;
         renderSteps(true);
         scrollDown();
-        await new Promise((r) => setTimeout(r, FINISH_PAUSE_MS));
+        await sleep(FINISH_PAUSE_MS);
+        bubble.classList.add("leaving");  // fade the checklist out, then fade the answer in
+        await sleep(FADE_MS);
+        bubble.classList.remove("leaving");
       }
       bubble.classList.add("reveal");
       const passages = m.passages || {};
@@ -163,7 +191,7 @@ async function ask(question) {
     scrollDown();
     let shown = null;  // finishes after the checklist pause and the answer render
     try {
-      await DA.stream(`/api/chats/${current}/ask`, { question }, (ev) => {
+      await DA.stream(`/api/chats/${current}/ask`, { question, lang: answerLang }, (ev) => {
         if (ev.type === "stage") bot.stage(ev.stage);
         else if (ev.type === "done") shown = bot.done(ev.message);
         else if (ev.type === "error") bot.error(ev.detail);
@@ -195,6 +223,15 @@ $("composer").addEventListener("submit", (e) => {
   ask(q);
 });
 $("newChat").onclick = newChat;
+
+/* Answer language picker (remembered in this browser). */
+function setLang(lang) {
+  answerLang = lang;
+  try { localStorage.setItem("da_lang", lang); } catch (_) {}
+  document.querySelectorAll("#langSeg button").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.lang === lang)));
+}
+document.querySelectorAll("#langSeg button").forEach((b) => { b.onclick = () => setLang(b.dataset.lang); });
+setLang(answerLang);
 
 $("examples").innerHTML = EXAMPLES.map(([tag, q]) => `<button class="ex" type="button"><small>${DA.esc(tag)}</small>${DA.esc(q)}</button>`).join("");
 $("examples").querySelectorAll(".ex").forEach((b, i) => { b.onclick = () => ask(EXAMPLES[i][1]); });

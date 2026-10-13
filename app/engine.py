@@ -81,8 +81,10 @@ class Engine:
 
     # ---------------------------------------------------------------- answering
     def run(self, question: str, history: list[tuple[str, str]], setup: str,
-            on_stage: Callable[[str], None] | None = None) -> dict[str, Any]:
-        """Answer one question (with chat history for follow-ups). Returns plain, JSON-ready data."""
+            on_stage: Callable[[str], None] | None = None, answer_lang: str | None = None) -> dict[str, Any]:
+        """Answer one question (with chat history for follow-ups). Returns plain, JSON-ready data.
+        `answer_lang` ("ko" / "en") forces the answer language; None follows the question."""
+        lang = answer_lang or detect_lang(question)
         if not self.ready or self.retriever is None:
             raise RuntimeError(self.error or "The engine is still loading; try again in a few seconds.")
         stage = on_stage or (lambda s: None)
@@ -96,11 +98,11 @@ class Engine:
             timings = dict(self.retriever.timings)
             translated = self.retriever.last_translation if self.cfg["retrieval"]["setups"][setup].get("translate") else None
             stage("answer")
-            ans = answer(standalone, hits, self.cfg, setup)
+            ans = answer(standalone, hits, self.cfg, setup, lang=lang)
             total = time.perf_counter() - t0
         return {
             "question": question, "standalone": standalone if standalone != question else None,
-            "setup": setup, "lang": detect_lang(question), "text": ans.text, "refused": ans.refused,
+            "setup": setup, "lang": lang, "lang_choice": answer_lang or "auto", "text": ans.text, "refused": ans.refused,
             "reason": ans.refusal_reason, "cited": ans.cited, "translated": translated,
             "threshold": refusal_threshold(self.cfg, setup),
             "evidence": [{"n": n, "chunk_id": h.chunk["chunk_id"],
