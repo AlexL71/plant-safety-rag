@@ -15,6 +15,12 @@ ingest:
   header_edge_rows: 3                 # only the first/last N rows can be running headers/footers
   header_repeat_min_pages: 3          # repeats needed (same text, same height); the very first/last row needs only 2
   header_repeat_ratio: 0.25           # digit-normalized repeats (e.g. "Frm 00360") also need this share of pages
+  edge_line_patterns:                 # known running heads/footers, removed in the edge rows only (short CFR files)
+    - '^\d+ CFR Ch\. [IVXLC]+ \(\d+[–-]\d+[–-]\d+ Edition\)$'   # "29 CFR Ch. XVII (7–1–25 Edition)"
+    - '^Occu\. Safety and Health Admin\., Labor$'
+    - '^Frm \d+$'
+    - '^VerDate '
+    - '^§\s*\d+\.\d+$'                                           # bare section number = running head
   min_page_chars: 30                  # pages with less text are logged as scanned/empty and skipped
   unreadable_placeholder: "[수식]"     # replaces runs of undecodable equation glyphs (HWP equation font)
 
@@ -24,9 +30,12 @@ chunking:
   overlap_tokens: 50                  # overlap between windows of one long clause
   min_chars: 20                       # drop near-empty chunks (e.g. a heading with no text)
   toc_min_leader_lines: 3             # pages with this many "······" lines are tables of contents: skipped
+  toc_min_leader_share: 0.5           # ... and at least this share of their lines (real TOCs: 0.75-1.0; CFR tables: 0.03)
   doc_types:                          # doc_id prefix -> clause rules (unknown prefixes use "booklet")
     KOSHA-: kosha
     KR-RULE-: kr_law
+    KR-ACT-: kr_law
+    KR-NOTICE-: kr_law
     CFR-: cfr
     OSHA-: booklet
 

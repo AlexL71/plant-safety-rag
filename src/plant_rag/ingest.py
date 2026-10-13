@@ -14,6 +14,8 @@ fonts and positions to find headings. Two PDF problems are fixed here:
    - the exact text repeats at the same height on `header_repeat_min_pages`+ pages, or
    - the text with digits ignored (e.g. "Frm 00360") repeats at the same height on at least
      `header_repeat_min_pages` pages and `header_repeat_ratio` of the document.
+   - it matches one of `edge_line_patterns` (known running heads such as the CFR's "Frm 00429";
+     needed for 1–3 page documents, where nothing can repeat often enough).
    Body lines are never candidates, so repeated table cells and short phrases on the Korean law's
    fixed line grid survive; numbered labels such as "<별표 1>", "<별표 2>" survive the last rule.
    (A fixed margin band does not work: CFR pages start 159 pt down, and Korean law pages put the
@@ -158,6 +160,7 @@ def extract_pdf(pdf_path: Path, doc_id: str, cfg: dict[str, Any]) -> tuple[list[
     gap_ratio, min_chars = float(ing["space_gap_ratio"]), int(ing["min_page_chars"])
     pn_rows, edge_rows = int(ing["page_number_rows"]), int(ing["header_edge_rows"])
     min_pages = int(ing["header_repeat_min_pages"])
+    known_edge = [re.compile(p) for p in ing.get("edge_line_patterns") or []]
 
     pages: list[dict] = []
     with pymupdf.open(pdf_path) as doc:
@@ -176,6 +179,9 @@ def extract_pdf(pdf_path: Path, doc_id: str, cfg: dict[str, Any]) -> tuple[list[
             normed[_norm(rec["text"])].append((p["page"], rec["y0"]))
     min_norm = max(min_pages, int(float(ing["header_repeat_ratio"]) * len(pages)))
 
+    def is_known(text: str) -> bool:
+        return any(rx.match(text) for rx in known_edge)
+
     log_rows: list[dict] = []
     kept_pages: list[dict] = []
     for p in pages:
@@ -187,7 +193,12 @@ def extract_pdf(pdf_path: Path, doc_id: str, cfg: dict[str, Any]) -> tuple[list[
                 reason = "page_number"
             elif rank < edge_rows:
                 n_exact = _repeat_count(exact, rec["text"], rec["y0"])
-                if (rank == 0 and n_exact >= 2) or n_exact >= min_pages:
+                # a known running head goes only if its whole row is running heads: "§ 1926.501" next to
+                # "Duty to have fall protection." on the same row is the real section title
+                row = [r["text"] for r in p["lines"] if abs(r["y0"] - rec["y0"]) <= Y_TOL]
+                if is_known(rec["text"]) and all(is_known(t) for t in row):
+                    reason = "known_pattern"
+                elif (rank == 0 and n_exact >= 2) or n_exact >= min_pages:
                     reason = "repeated_text"
                 elif _repeat_count(normed, _norm(rec["text"]), rec["y0"]) >= min_norm:
                     reason = "repeated_pattern"

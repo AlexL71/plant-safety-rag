@@ -129,7 +129,7 @@ def _new(sections: list[Section], **kw) -> Section:
 
 KOSHA_TOP = re.compile(r"^(\d{1,2})\.(?!\d)\s*(\S.{0,60})$")  # "5. 오리피스…", not the table value "12.4"
 KOSHA_SUB = re.compile(r"^(\d{1,2})\.(\d{1,2})(?:\.(\d{1,2}))?\.?\s+(\S.{0,60})$")
-KOSHA_APPX = re.compile(r"^[<\[]\s*(부록|별표|별지|부표|서식)\s*(?:양식\s*)?(\d*)\s*[>\]]")  # also "<별지 양식3>"
+KOSHA_APPX = re.compile(r"^[<\[]\s*(부록|별표|별지|부표|서식|붙임)\s*(?:양식\s*)?(\d*)\s*[>\]]")  # also "<별지 양식3>"
 KOSHA_REF_TAIL = re.compile(r"^\s*(의|을|를|에|와|과|으로|로|은|는|이|가|참조|및)")  # "[부록 2]와 같다." is a reference
 KOSHA_APPX_HEAD = re.compile(r"^(\d{1,2})\.\s*[가-힣A-Za-z]")  # numbered headings inside an appendix
 KOSHA_ITEM = re.compile(r"^\((\d{1,2})\)\s")
@@ -157,7 +157,8 @@ def split_kosha(lines: list[Line], doc_id: str) -> list[Section]:
                 cid = ".".join(g for g in m_sub.groups()[:3] if g)
                 cur = _new(sections, clause_id=cid, heading=f"{top_heading} > {t}", heading_alone=True,
                            sub_pattern=KOSHA_ITEM)
-        elif not in_appendix and m_top and int(m_top.group(1)) == last_top + 1:
+        elif (not in_appendix and m_top and int(m_top.group(1)) == last_top + 1
+              and not t.endswith(".")):  # "6. 잭으로 차량을 들어올린다." is a numbered table row, not heading 6
             last_top, last_sub, top_heading = int(m_top.group(1)), (0, 0), t
             cur = _new(sections, clause_id=m_top.group(1), heading=t, heading_alone=True, sub_pattern=KOSHA_ITEM)
         cur.lines.append(ln)
@@ -204,11 +205,29 @@ def split_kr_law(lines: list[Line], doc_id: str) -> list[Section]:
     return sections
 
 
-CFR_PARA = re.compile(r"^\(([a-z])\)\s+([A-Z][^.;:—]{1,90}?)\s*[.—]")
+# "(d) Permit-required confined space program." or "(b)(1) Unprotected sides and edges." The title may wrap onto
+# the next line (two-column CFR pages), so it is matched on this line + the next one.
+CFR_PARA = re.compile(r"^\(([a-z])\)\s*(?:\(\d{1,2}\)\s*)?([A-Z][^.;:—]{1,90}?)\s*[.—]")
 CFR_SUB = re.compile(r"^\((\d{1,2})\)\s")
 CFR_APPX = re.compile(r"^Appendix\s+([A-Z])\s+to\s+§", re.IGNORECASE)
 CFR_ANY_SECTION = re.compile(r"^§\s*(\d+\.\d+)\s*($|[A-Z])")  # "§ 1910.119" alone or with its title
 NUMBERED_HEAD = re.compile(r"^(\d{1,2})\.\s+[A-Z]")
+CFR_ROMAN_LETTERS = "ivx"  # "(i) Each employer shall…" is a roman-numeral item, not paragraph (i), unless it has a short title
+
+
+def _cfr_para_title(lines: list[Line], i: int) -> tuple[str, str] | None:
+    """(letter, title) if lines[i] starts a lettered CFR paragraph, reading a wrapped title from the next line."""
+    text = lines[i].text
+    if i + 1 < len(lines) and lines[i + 1].page == lines[i].page:
+        nxt = lines[i + 1].text
+        text = text[:-1] + nxt if text.endswith("-") and nxt[:1].islower() else f"{text} {nxt}"
+    m = CFR_PARA.match(text)
+    if not m:
+        return None
+    letter, title = m.group(1), m.group(2)
+    if letter in CFR_ROMAN_LETTERS and (len(title) > 60 or " shall " in f" {title} "):
+        return None
+    return letter, title
 
 
 def split_cfr(lines: list[Line], doc_id: str) -> list[Section]:
@@ -216,8 +235,8 @@ def split_cfr(lines: list[Line], doc_id: str) -> list[Section]:
     sec_no = m.group(1) if m else ""
     sections: list[Section] = []
     cur: Section | None = None
-    expected = "a"
-    for ln in lines:
+    expected, expected_appx = "a", "A"  # paragraphs and appendices must come in order; this skips cross-references
+    for i, ln in enumerate(lines):
         t = ln.text
         m_any = CFR_ANY_SECTION.match(t)
         if m_any:
@@ -227,13 +246,15 @@ def split_cfr(lines: list[Line], doc_id: str) -> list[Section]:
                 break  # next CFR section starts: stop
         if cur is None:
             continue  # text of the previous CFR section on the first page
-        m_appx, m_para = CFR_APPX.match(t), CFR_PARA.match(t)
-        if m_appx:
+        m_appx = CFR_APPX.match(t)
+        para = _cfr_para_title(lines, i) if expected and t.startswith(f"({expected})") else None
+        if m_appx and m_appx.group(1).upper() == expected_appx:
             expected = None  # no more lettered paragraphs after the appendices start
+            expected_appx = chr(ord(expected_appx) + 1)
             cur = _new(sections, clause_id=f"Appendix {m_appx.group(1).upper()}", heading=t,
                        sub_pattern=NUMBERED_HEAD)
-        elif expected and m_para and m_para.group(1) == expected:
-            cur = _new(sections, clause_id=f"({expected})", heading=f"({expected}) {m_para.group(2)}",
+        elif para:
+            cur = _new(sections, clause_id=f"({expected})", heading=f"({expected}) {para[1]}",
                        sub_pattern=CFR_SUB, sub_sep="")
             expected = chr(ord(expected) + 1)
         cur.lines.append(ln)
@@ -412,21 +433,24 @@ def doc_type_for(doc_id: str, cfg: dict[str, Any]) -> str:
     return "booklet"
 
 
-def _is_toc_page(page: dict, n_pages: int, min_leaders: int) -> bool:
+def _is_toc_page(page: dict, n_pages: int, min_leaders: int, min_share: float = 0.0) -> bool:
     """A table of contents: near the front of the document, with many lines ending in dot leaders
-    (+ page number). The position check keeps dotted lists such as CFR Appendix A (chemical ... CAS ... TQ)."""
-    if page["page"] > max(5, 0.25 * n_pages):
+    (+ page number). The position check keeps dotted lists such as CFR Appendix A (chemical ... CAS ... TQ);
+    the share check keeps body pages with a small dotted table (29 CFR 1910.252 lens shades: 3 of 122 lines)."""
+    if page["page"] > max(5, 0.25 * n_pages) or not page["lines"]:
         return False
-    return sum(1 for r in page["lines"] if TOC_ENTRY.search(r["text"])) >= min_leaders
+    n = sum(1 for r in page["lines"] if TOC_ENTRY.search(r["text"]))
+    return n >= min_leaders and n / len(page["lines"]) >= min_share
 
 
 def chunk_document(doc_id: str, pages: list[dict], meta: dict[str, str], cfg: dict[str, Any]) -> list[dict]:
     kind = doc_type_for(doc_id, cfg)
     min_leaders = int(cfg["chunking"]["toc_min_leader_lines"])
+    min_share = float(cfg["chunking"].get("toc_min_leader_share", 0.0))
     n_pages = max(p["page"] for p in pages)
     lines = [Line(TOC_LEADER.sub(" ... ", r["text"]).strip(), p["page"], r["size"], r["font"], r["bold"], r["y0"],
                   r["x0"], r["x1"], r["y1"])
-             for p in sorted(pages, key=lambda p: p["page"]) if not _is_toc_page(p, n_pages, min_leaders)
+             for p in sorted(pages, key=lambda p: p["page"]) if not _is_toc_page(p, n_pages, min_leaders, min_share)
              for r in p["lines"] if TOC_LEADER.sub("", r["text"]).strip()]
     sections = SPLITTERS[kind](lines, doc_id)
 
