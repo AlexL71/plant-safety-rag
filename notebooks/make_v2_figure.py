@@ -26,7 +26,7 @@ def main() -> None:
     data = [(label, recall(run)) for run, label in RUNS]
     setups = ["A", "B", "C", "D", "E"]
     names = {"A": "A · BM25", "B": "B · Dense", "C": "C · Hybrid", "D": "D · +Reranker", "E": "E · +Translation"}
-    fig, ax = plt.subplots(figsize=(9, 4.2), dpi=150)
+    fig, ax = plt.subplots(figsize=(9, 4.6), dpi=150)
     w = 0.26
     for i, (label, r) in enumerate(data):
         xs = [k + (i - 1) * w for k in range(len(setups))]
@@ -37,12 +37,12 @@ def main() -> None:
     ax.set_ylabel("Recall@5 (%)")
     ax.set_ylim(0, 110)
     ax.spines[["top", "right"]].set_visible(False)
-    ax.legend(frameon=False, fontsize=8.5, loc="upper left")
+    ax.legend(frameon=False, fontsize=8.5, loc="upper center", bbox_to_anchor=(0.5, -0.1), ncol=3)
     ax.set_title("Right clause in the top 5, by search setup", fontsize=11, loc="left")
     fig.tight_layout()
     out = ROOT / "docs" / "figures" / "recall_v2.png"
     fig.savefig(out)
-    print(out)
+    print(out.relative_to(ROOT))
 
 
 if __name__ == "__main__":

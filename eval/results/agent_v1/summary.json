@@ -25,5 +25,44 @@
         "chitchat": 7
       }
     }
+  },
+  "visuals": {
+    "produced": "11/12",
+    "requested_type": "11/12",
+    "elements": {
+      "elements": 59,
+      "kept": 51,
+      "dropped": 8,
+      "number_not_in_source": 6,
+      "no_valid_citation": 2
+    },
+    "not_produced": {
+      "v11": "low_score"
+    }
+  },
+  "plans": {
+    "produced": "6/6",
+    "hazard_groups_covered": "7/7",
+    "items": {
+      "elements": 114,
+      "kept": 106,
+      "dropped": 8,
+      "number_not_in_source": 8
+    }
+  },
+  "notices": {
+    "produced": "6/6",
+    "lines": {
+      "elements": 66,
+      "kept": 66,
+      "dropped": 0
+    },
+    "translations_all_numbers_kept": "4/6",
+    "translated_lines_numbers_kept": "75/78"
+  },
+  "median_seconds": {
+    "visual": 36.7,
+    "plan": 66.1,
+    "notice": 29.0
   }
 }

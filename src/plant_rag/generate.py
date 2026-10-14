@@ -209,8 +209,11 @@ class Answer:
 
 
 def detect_lang(text: str) -> str:
-    """Korean if the question contains Hangul, otherwise English."""
-    return "ko" if re.search(r"[가-힣]", text) else "en"
+    """Korean if Hangul carries the question, otherwise English. One Hangul syllable carries about as much as three
+    Latin letters, so "Under Korea's rules, ... (안전대)?" is English and "LOTO 절차는?" is Korean."""
+    hangul = len(re.findall(r"[가-힣]", text))
+    latin = len(re.findall(r"[A-Za-z]", text))
+    return "ko" if hangul and hangul * 3 >= latin else "en"
 
 
 def format_location(chunk: dict) -> str:

@@ -20,7 +20,61 @@ passage. The code package is named `plant_rag` (the project started as a process
 
 ## Results
 
-__RESULTS__
+Measured on held-out questions that were never used to tune the system (setup E = the one users get).
+
+**Search and answers**
+
+| Test set | Questions | Right clause in top 5 (Recall@5) | Cross-language | MRR@10 | "Not found" correct / wrong | Answers faithful / fully correct |
+|---|---|---|---|---|---|---|
+| Set 1 · process safety · 10 docs (first version) | 40 | 34/34 | 16/16 | 0.92 | 6/6 · 1/34 | 33/33 · 32/33 |
+| Set 1 · same questions · **29 docs** | 40 | **34/34** | **16/16** | **0.92** | **6/6 · 1/34** | not re-graded |
+| Set 2 · **new topics** (confined spaces, lockout, forklifts, falls, welding, PPE, heat, risk assessment, OSH Act) · 29 docs | 27 | **23/24** | **11/12** | **0.94** | **3/3 · 1/24** | **23/23 · 22/23** |
+
+Tripling the corpus did not hurt the first test set, and the new topics work almost as well. Search setups
+compared on all three runs (A = keyword only … E = hybrid + reranker + translating the question):
+
+![Recall@5 by setup](docs/figures/recall_v2.png)
+
+| Setup (set 2, 29 docs) | Recall@5 | Cross-language | Wrong "not found" |
+|---|---|---|---|
+| A · BM25 keyword | 14/24 | 2/12 | – |
+| B · Dense (meaning) | 23/24 | 11/12 | – |
+| C · Hybrid (RRF) | 16/24 | 4/12 | 8/24 |
+| D · Hybrid + reranker | 22/24 | 10/12 | 1/24 |
+| **E · D + query translation** | **23/24** | **11/12** | **1/24** |
+
+**Agent**
+
+| Check | Result |
+|---|---|
+| Router picks the right tool (answer / visual / compare / job plan / notice / chitchat), 42 requests in KO + EN, incl. 6 harder mixed ones | **42/42** |
+| Visuals produced, of the requested type | **11/12** (the 12th: "not found", score below the threshold) |
+| Visual elements kept by the checks (citation + numbers guard) | 54/59 (5 removed: number not in the cited passage, or no valid citation) |
+| Job plans produced · expected hazards covered · plan items kept | **6/6 · 7/7 · 114/114** |
+| Notices produced · lines kept | **6/6 · 66/66** |
+| Translated notice lines whose numbers survive translation + back-translation (vi, en, th, ko, uz) | 75/78 (the 3 flags: "half hour" → "30분", a date format; meaning kept, sent to the reviewer) |
+| Shown elements contradicting their cited passage (223 reviewed) | **0 found** |
+
+Review notes and the problems found (two check bugs, fixed: step numbers and "[n]" marks were checked as
+numbers; open: a missed two-part question, a retrieval miss in one comparison, repeated lines in two notices):
+[`eval/results/agent_v1/review.md`](eval/results/agent_v1/review.md). Timing on a laptop CPU: visual ~37 s, notice
+~29 s, job plan ~66 s (three searches).
+
+**What we learned**
+- **Cross-language questions decide the ranking.** Keyword search finds nothing across languages; the reranker
+  scores Korean–English pairs too low. Translating the question (one small cached call) fixes both.
+- **The model rarely invents.** Every graded answer was faithful to its passages; the errors are a missed
+  clause (set 2: the harness-height article 제32조 was not retrieved) and a too-strict refusal (a forklift
+  question whose right clause ranked #1 but scored 0.07, below the "not found" threshold of 0.15).
+- **Checks catch what review misses.** The numbers guard flags an edited notice line ("999 kg") immediately, and
+  back-translation shows whether a Vietnamese line still says what the Korean one says.
+- **Bug found by the new test set:** English questions containing a Korean term ("… safety net (추락방호망)?") were
+  answered in Korean, because language detection looked for any Hangul. Fixed after the run (Hangul must carry
+  the question); all 87 questions are now detected correctly.
+- **Trade-off:** setup E takes ~15–30 s per question on a laptop CPU, mostly the reranker.
+
+Details: [`eval/results/`](eval/results/) (per-question rows, summaries, grades) and
+[`notebooks/02_eval_analysis.ipynb`](notebooks/02_eval_analysis.ipynb) (first version).
 
 ## How it works
 
@@ -62,7 +116,9 @@ Plain-English notes on every step: [`docs/how_it_works.md`](docs/how_it_works.md
 | **Admin** (`/admin`, password) | Review answers against all passages the model saw; **approve notices**; test console with any search setup and agent mode; documents; settings. |
 | **Landing** (`/`) | What SafetyAgent does, built vs planned modules, measured results. EN / 한국어 interface. |
 
-![Visual answer in the chat](docs/figures/safetyagent_chat_visual.png)
+![Korea vs US comparison in the chat](docs/figures/safetyagent_chat_visual.png)
+
+![An approved notice with a Vietnamese second language](docs/figures/safetyagent_notice.png)
 
 ## Data (29 public documents)
 

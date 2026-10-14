@@ -82,6 +82,20 @@ class CheckResult:
         return {"elements": self.total, "kept": len(self.kept), "dropped": len(self.dropped), **reasons}
 
 
+CITE_MARKS = re.compile(r"\s*\[\d+(?:\s*[,，]\s*\d+)*\]")   # "[2]", "[1, 2, 3]" written into the text
+LEAD_ENUM = re.compile(r"^\s*\d{1,2}[.)]\s+")                # "4. 작업허가서 발급" (the visual numbers steps itself)
+
+
+def clean_text_fields(el: dict, keys: tuple[str, ...]) -> dict:
+    """Remove citation marks and leading list numbers the model sometimes writes into text fields: they are not
+    content, would be checked as numbers by the guard, and the page shows citations and step numbers itself."""
+    out = dict(el)
+    for k in keys:
+        if isinstance(out.get(k), str):
+            out[k] = LEAD_ENUM.sub("", CITE_MARKS.sub("", out[k])).strip()
+    return out
+
+
 def check_elements(elements: list[dict], text_keys: tuple[str, ...], passages: dict[int, dict],
                    cite_key: str = "cite", allow_uncited: bool = False,
                    extra_numbers: Iterable[str] = ()) -> CheckResult:
@@ -93,6 +107,7 @@ def check_elements(elements: list[dict], text_keys: tuple[str, ...], passages: d
     res = CheckResult()
     allowed_extra = {normalize_number(n) for n in extra_numbers}
     for el in elements:
+        el = clean_text_fields(el, text_keys)
         cites = [c for c in (el.get(cite_key) or []) if isinstance(c, int)]
         valid = [c for c in cites if c in passages]
         if not valid and not allow_uncited:

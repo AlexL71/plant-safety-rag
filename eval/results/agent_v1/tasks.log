@@ -1,0 +1,93 @@
+Loading weights:   0%|          | 0/393 [00:00<?, ?it/s]Loading weights:   2%|▏         | 6/393 [00:00<00:06, 57.33it/s]Loading weights:   4%|▍         | 16/393 [00:00<00:05, 66.32it/s]Loading weights:   8%|▊         | 31/393 [00:00<00:03, 98.44it/s]Loading weights:  11%|█         | 42/393 [00:00<00:04, 79.50it/s]Loading weights:  13%|█▎        | 52/393 [00:00<00:04, 82.50it/s]Loading weights:  16%|█▌        | 63/393 [00:00<00:03, 83.91it/s]Loading weights:  22%|██▏       | 87/393 [00:00<00:02, 126.50it/s]Loading weights:  28%|██▊       | 112/393 [00:00<00:01, 156.87it/s]Loading weights:  33%|███▎      | 129/393 [00:01<00:01, 145.15it/s]Loading weights:  37%|███▋      | 145/393 [00:01<00:02, 123.48it/s]Loading weights:  40%|████      | 159/393 [00:01<00:02, 109.11it/s]Loading weights:  50%|████▉     | 196/393 [00:01<00:01, 166.64it/s]Loading weights:  55%|█████▍    | 215/393 [00:01<00:01, 153.77it/s]Loading weights:  59%|█████▉    | 233/393 [00:01<00:01, 126.44it/s]Loading weights: 100%|██████████| 393/393 [00:01<00:00, 196.74it/s]
+v01 visual produced=True (85.0s)
+v02 visual produced=True (28.3s)
+v03 visual produced=True (48.0s)
+v04 visual produced=True (50.4s)
+v05 visual produced=True (18.7s)
+v06 visual produced=True (33.9s)
+v07 visual produced=True (40.9s)
+v08 visual produced=True (37.5s)
+v09 visual produced=True (36.7s)
+v10 visual produced=True (34.0s)
+v11 visual produced=False (14.9s)
+v12 visual produced=True (24.9s)
+p01 plan   produced=True (63.3s)
+p02 plan   produced=True (77.0s)
+p03 plan   produced=True (51.5s)
+p04 plan   produced=True (97.0s)
+p05 plan   produced=True (66.1s)
+p06 plan   produced=True (64.2s)
+n01 notice produced=True (27.0s)
+n02 notice produced=True (30.8s)
+n03 notice produced=True (30.6s)
+n04 notice produced=True (19.0s)
+n05 notice produced=True (29.0s)
+n06 notice produced=True (28.1s)
+{
+  "router": {
+    "accuracy": "42/42",
+    "by_language": {
+      "ko": "21/21",
+      "en": "21/21"
+    },
+    "confusion": {
+      "answer": {
+        "answer": 6
+      },
+      "visual": {
+        "visual": 7
+      },
+      "compare": {
+        "compare": 7
+      },
+      "task_plan": {
+        "task_plan": 7
+      },
+      "notice": {
+        "notice": 8
+      },
+      "chitchat": {
+        "chitchat": 7
+      }
+    }
+  },
+  "visuals": {
+    "produced": "11/12",
+    "requested_type": "11/12",
+    "elements": {
+      "elements": 59,
+      "kept": 51,
+      "dropped": 8,
+      "number_not_in_source": 6,
+      "no_valid_citation": 2
+    },
+    "not_produced": {
+      "v11": "low_score"
+    }
+  },
+  "plans": {
+    "produced": "6/6",
+    "hazard_groups_covered": "7/7",
+    "items": {
+      "elements": 114,
+      "kept": 106,
+      "dropped": 8,
+      "number_not_in_source": 8
+    }
+  },
+  "notices": {
+    "produced": "6/6",
+    "lines": {
+      "elements": 66,
+      "kept": 66,
+      "dropped": 0
+    },
+    "translations_all_numbers_kept": "4/6",
+    "translated_lines_numbers_kept": "75/78"
+  },
+  "median_seconds": {
+    "visual": 36.7,
+    "plan": 66.1,
+    "notice": 29.0
+  }
+}
