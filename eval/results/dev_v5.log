@@ -1,0 +1,38 @@
+Loading weights:   0%|          | 0/393 [00:00<?, ?it/s]Loading weights:   3%|▎         | 11/393 [00:00<00:04, 90.01it/s]Loading weights:   5%|▌         | 21/393 [00:00<00:03, 94.24it/s]Loading weights:   8%|▊         | 31/393 [00:00<00:04, 76.10it/s]Loading weights:  10%|▉         | 39/393 [00:00<00:05, 69.01it/s]Loading weights:  15%|█▍        | 57/393 [00:00<00:03, 94.94it/s]Loading weights:  17%|█▋        | 67/393 [00:00<00:03, 95.29it/s]Loading weights:  20%|█▉        | 77/393 [00:00<00:03, 92.93it/s]Loading weights:  23%|██▎       | 90/393 [00:00<00:03, 100.31it/s]Loading weights:  26%|██▌       | 102/393 [00:01<00:02, 103.40it/s]Loading weights:  29%|██▉       | 113/393 [00:01<00:03, 92.41it/s] Loading weights:  31%|███▏      | 123/393 [00:01<00:03, 83.33it/s]Loading weights:  34%|███▎      | 132/393 [00:01<00:03, 83.11it/s]Loading weights:  43%|████▎     | 168/393 [00:01<00:01, 154.24it/s]Loading weights: 100%|██████████| 393/393 [00:01<00:00, 242.17it/s]
+[1/20] F q001 gold@1  (61.6s)
+[2/20] F q004 gold@1  (16.5s)
+[3/20] F q007 gold@1  (15.6s)
+[4/20] F q013 gold@1  (15.7s)
+[5/20] F q015 gold@5  (14.8s)
+[6/20] F q017 gold@1  (28.2s)
+[7/20] F q019 gold@1  (18.5s)
+[8/20] F q035 gold@1  (16.9s)
+[9/20] F q037 gold@1  (15.6s)
+[10/20] F q038 gold@1  (16.3s)
+[11/20] F q039 gold@1  (15.9s)
+[12/20] F q041 gold@2  (18.3s)
+[13/20] F q043 gold@1  (15.2s)
+[14/20] F q045 gold@1  (16.1s)
+[15/20] F q046 gold@1  (17.3s)
+[16/20] F q049 gold@1  (16.0s)
+[17/20] F q051 gold@- refused (16.2s)
+[18/20] F q053 gold@- refused (16.1s)
+[19/20] F q056 gold@- refused (19.1s)
+[20/20] F q058 gold@- refused (15.9s)
+{"setup": "F", "questions": 20, "recall@5": "16/16 = 100%", "recall@5_cross_lingual": "7/7 = 100%", "mrr@10": "0.919", "median_search_s": "16.2", "correct_refusals": "4/4 = 100%", "false_refusals": "0/16 = 0%", "answers_citing_gold": "16/16 = 100%", "citation_precision": "22/33 = 67%", "median_llm_s": "4.9"}
+
+threshold sweep (setup F, dev):
+  0.0    correct refusals    4/4  false refusals   0/16  net 4
+  0.001  correct refusals    4/4  false refusals   0/16  net 4
+  0.003  correct refusals    4/4  false refusals   0/16  net 4
+  0.005  correct refusals    4/4  false refusals   0/16  net 4
+  0.01   correct refusals    4/4  false refusals   0/16  net 4
+  0.02   correct refusals    4/4  false refusals   0/16  net 4
+  0.03   correct refusals    4/4  false refusals   0/16  net 4
+  0.05   correct refusals    4/4  false refusals   0/16  net 4
+  0.1    correct refusals    4/4  false refusals   0/16  net 4
+  0.2    correct refusals    4/4  false refusals   0/16  net 4
+  0.3    correct refusals    4/4  false refusals   0/16  net 4
+  0.5    correct refusals    4/4  false refusals   0/16  net 4
+
+Results: C:\Users\dadab\OneDrive\Рабочий стол\plant-safety-rag\eval\results\dev_v5

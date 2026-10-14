@@ -1,30 +1,24 @@
 /* SafetyAgent user chat: the agent answers, explains with visuals, compares Korea vs US, plans a job, drafts notices. */
 "use strict";
 
-/* [label key in i18n.js, request, mode]; the requests stay as written: they show the agent's tools and the
-   cross-language search */
+/* [label key in i18n.js, question]: plain questions, as a worker would ask them. The agent adds a chart, a job plan
+   or a notice by itself; the questions stay as written (they also show the Korean <-> English search). */
 const EXAMPLES = [
-  ["ex.1", "밀폐공간 작업 시 적정공기 기준은 무엇인가요?", "auto"],
-  ["ex.2", "Show the safe air limits for confined-space work as a chart", "auto"],
-  ["ex.3", "Compare Korea and the US: from what height is fall protection required?", "auto"],
-  ["ex.4", "내일 탱크 내부에서 용접 작업을 합니다. 무엇을 준비하고 점검해야 하나요?", "auto"],
-  ["ex.5", "Make a poster about forklift safety for our warehouse", "auto"],
-  ["ex.6", "How long must a fire watch continue after welding?", "auto"],
+  ["ex.1", "밀폐공간에 들어가기 전에 무엇을 확인해야 하나요?"],
+  ["ex.2", "How long must a fire watch continue after welding?"],
+  ["ex.3", "안전대는 몇 미터 이상 높이에서 착용해야 하나요?"],
+  ["ex.4", "Is the oxygen limit for confined spaces different in Korea and the US?"],
+  ["ex.5", "내일 탱크 안에서 용접 작업을 합니다. 무엇을 준비해야 하나요?"],
+  ["ex.6", "지게차 안전 포스터를 만들어 줘"],
 ];
 const FINISH_PAUSE_MS = 900;  // how long the all-green checklist stays visible before the answer
 const FADE_MS = 180;          // checklist fade-out before the answer appears
 const LANGS = ["auto", "ko", "en"];  // answer language: auto = same language as the question
 // every stage the server can report, in display order; labels: "stage.<name>" in i18n.js
-const STAGES = ["route", "condense", "query", "plan", "translate", "search", "rerank", "answer", "visual", "notice", "check"];
-const DEFAULT_STAGES = {   // shown (waiting) from the start, per mode; others appear when reported
-  auto: ["route", "search", "rerank", "answer"],
-  answer: ["search", "rerank", "answer"],
-  visual: ["search", "rerank", "answer", "visual"],
-  compare: ["search", "rerank", "answer", "visual"],
-  task_plan: ["plan", "search", "answer", "check"],
-  notice: ["search", "rerank", "notice"],
-};
-const INTENT_ICON = { answer: "💬", visual: "📊", compare: "⚖️", task_plan: "🧰", notice: "📄", chitchat: "👋" };
+const STAGES = ["route", "condense", "plan", "translate", "search", "rerank", "answer", "visual", "notice", "check"];
+const DEFAULT_STAGES = ["route", "search", "rerank", "answer"];  // shown (waiting) from the start; others appear when reported
+const INTENT_ICON = { task_plan: "🧰", notice: "📄" };
+const COUNTRY_KEY = { KR: "country.kr", US: "country.us" };
 
 const $ = (id) => document.getElementById(id);
 const viewer = new DA.Viewer();
@@ -33,9 +27,7 @@ let current = null;     // current chat id (null = new, not created yet)
 let busy = false;
 let maxChats = 50;
 let answerLang = "auto";
-let mode = "auto";
 try { if (LANGS.includes(localStorage.getItem("da_lang"))) answerLang = localStorage.getItem("da_lang"); } catch (_) {}
-try { if (DEFAULT_STAGES[localStorage.getItem("sa_mode")]) mode = localStorage.getItem("sa_mode"); } catch (_) {}
 
 /* ---------------------------------------------------------------- sidebar */
 async function loadChats() {
@@ -104,11 +96,14 @@ function messageHtml(m) {
   const passages = m.passages || {};
   const nSrc = Object.keys(passages).length;
   const lang = DA.t(m.lang === "ko" ? "lang.ko" : "lang.en");
-  const routed = m.intent && m.intent !== "answer"
-    ? `<span class="chip accent" title="${DA.esc(DA.t("agent.routedTitle", { r: m.route_reason || "" }))}">${INTENT_ICON[m.intent] || ""} ${DA.t(`mode.${m.intent}`)}</span>` : "";
+  const routed = INTENT_ICON[m.intent]
+    ? `<span class="chip accent">${INTENT_ICON[m.intent]} ${DA.t(`mode.${m.intent}`)}</span>` : "";
+  const where = COUNTRY_KEY[m.country] ? DA.t(COUNTRY_KEY[m.country]) : DA.t("country.both");
+  const searched = m.search_query
+    ? `<div class="searched" title="${DA.esc(DA.t("ans.searchedTitle"))}">🔎 ${DA.t("ans.searched", { q: DA.esc(m.search_query), w: where })}</div>` : "";
   const meta = `<div class="meta-line">${routed}<span class="chip">${DA.t(nSrc === 1 ? "ans.source1" : "ans.sourceN", { n: nSrc })}</span>
       <span>${DA.t("ans.in", { lang })}${m.total_s ? ` · ${DA.t("steps.secs", { s: Math.round(m.total_s) })}` : ""}</span>
-      ${m.standalone ? `<span title="${DA.esc(DA.t("ans.readAsTitle"))}">${DA.t("ans.readAs", { q: DA.esc(m.standalone) })}</span>` : ""}</div>`;
+      ${m.standalone ? `<span title="${DA.esc(DA.t("ans.readAsTitle"))}">${DA.t("ans.readAs", { q: DA.esc(m.standalone) })}</span>` : ""}</div>${searched}`;
   if (m.kind === "chat") {
     return { cls: "", html: `<div class="answer">${DA.renderAnswer(m.text, {})}</div>` };
   }
@@ -128,12 +123,11 @@ function messageHtml(m) {
   }
   return { cls: m.visual ? "wide" : "", html: `<div class="answer">${DA.renderAnswer(m.text, passages)}</div>
       ${m.visual ? DA.renderVisual(m.visual, passages) : ""}${meta}
-      <div class="actions">${m.visual ? "" : `<button class="btn btn-ghost btn-sm" data-act="visual">📊 ${DA.t("act.visual")}</button>`}
-      <button class="btn btn-ghost btn-sm" data-act="notice">📄 ${DA.t("act.notice")}</button></div>` };
+      <div class="actions"><button class="btn btn-ghost btn-sm" data-act="notice">📄 ${DA.t("act.notice")}</button></div>` };
 }
 
 /* Assistant message: starts as a progress list, then becomes the answer. */
-function addBot(msgMode = "auto") {
+function addBot() {
   const wrap = document.createElement("div");
   wrap.className = "msg-bot";
   wrap.innerHTML = `<img class="av" src="/brand/safetyagent_icon.svg" alt="SafetyAgent"><div class="bubble"></div>`;
@@ -141,7 +135,7 @@ function addBot(msgMode = "auto") {
   const bubble = wrap.querySelector(".bubble");
   const seen = [];
   const t0 = Date.now();
-  const defaults = DEFAULT_STAGES[msgMode] || DEFAULT_STAGES.auto;
+  const defaults = DEFAULT_STAGES;
   let timer = null;
 
   /* The step list is built once and then only updated in place (class changes, new rows), so spinners keep
@@ -215,7 +209,7 @@ function addBot(msgMode = "auto") {
   };
 }
 
-/* Buttons under an answer: make a visual from the same sources, or turn it into a notice / TBM sheet. */
+/* Buttons under an answer: turn it into a notice, or a job plan into a TBM sheet (same sources, no new search). */
 function wireActions(bubble, m) {
   bubble.querySelectorAll("[data-act]").forEach((btn) => {
     btn.onclick = async () => {
@@ -225,23 +219,15 @@ function wireActions(bubble, m) {
       const label = btn.innerHTML;
       btn.innerHTML = `<span class="spinner"></span> ${DA.t("act.working")}`;
       try {
-        if (act === "visual") {
-          const upd = await DA.api(`/api/messages/${m.id}/visual`, { method: "POST", body: { type: "auto" } });
-          const { cls, html } = messageHtml(upd);
-          bubble.className = `bubble reveal ${cls}`;
-          bubble.innerHTML = html;
-          popover.attach(bubble, upd.passages || {});
-          wireActions(bubble, upd);
-        } else {  // notice / tbm: draft from this message's evidence, then open the editor
-          let id = null, err = null;
-          await DA.stream("/api/notices", { message_id: m.id, lang: m.lang === "en" ? "en" : "ko",
-                                           template: act === "tbm" ? "tbm" : "poster" }, (ev) => {
-            if (ev.type === "done") id = ev.notice.id;
-            else if (ev.type === "error") err = ev.detail;
-          });
-          if (err) throw new Error(err);
-          location.href = `/notices?id=${encodeURIComponent(id)}`;
-        }
+        // notice / TBM sheet: draft from this message's evidence, then open the editor
+        let id = null, err = null;
+        await DA.stream("/api/notices", { message_id: m.id, lang: m.lang === "en" ? "en" : "ko",
+                                         template: act === "tbm" ? "tbm" : "poster" }, (ev) => {
+          if (ev.type === "done") id = ev.notice.id;
+          else if (ev.type === "error") err = ev.detail;
+        });
+        if (err) throw new Error(err);
+        location.href = `/notices?id=${encodeURIComponent(id)}`;
       } catch (e) {
         btn.innerHTML = label;
         btn.disabled = false;
@@ -262,7 +248,7 @@ function printPlan(bubble) {
 }
 
 /* ---------------------------------------------------------------- asking */
-async function ask(question, askMode = mode) {
+async function ask(question) {
   if (busy || !question.trim()) return;
   busy = true;
   $("send").disabled = true;
@@ -276,12 +262,12 @@ async function ask(question, askMode = mode) {
     addUser(question);
     if (isNewChat) $("chatTitle").textContent = question.slice(0, 70);
     setTimeout(loadChats, 400);  // show the new chat in the sidebar while the answer is prepared
-    const bot = addBot(askMode);
+    const bot = addBot();
     bot.start();
     scrollDown();
     let shown = null;  // finishes after the checklist pause and the answer render
     try {
-      await DA.stream(`/api/chats/${current}/ask`, { question, lang: answerLang, mode: askMode }, (ev) => {
+      await DA.stream(`/api/chats/${current}/ask`, { question, lang: answerLang }, (ev) => {
         if (ev.type === "stage") bot.stage(ev.stage);
         else if (ev.type === "done") shown = bot.done(ev.message);
         else if (ev.type === "error") bot.error(ev.detail);
@@ -314,7 +300,7 @@ $("composer").addEventListener("submit", (e) => {
 });
 $("newChat").onclick = newChat;
 
-/* Answer language and agent mode pickers (remembered in this browser). */
+/* Answer language picker (remembered in this browser). */
 function setLang(lang) {
   answerLang = lang;
   try { localStorage.setItem("da_lang", lang); } catch (_) {}
@@ -323,17 +309,9 @@ function setLang(lang) {
 document.querySelectorAll("#langSeg button").forEach((b) => { b.onclick = () => setLang(b.dataset.lang); });
 setLang(answerLang);
 
-function setMode(m) {
-  mode = DEFAULT_STAGES[m] ? m : "auto";
-  try { localStorage.setItem("sa_mode", mode); } catch (_) {}
-  document.querySelectorAll("#modeSeg button").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.mode === mode)));
-  $("input").placeholder = DA.t(`ph.${mode}`);
-}
-document.querySelectorAll("#modeSeg button").forEach((b) => { b.onclick = () => setMode(b.dataset.mode); });
-
 function renderExamples() {
   $("examples").innerHTML = EXAMPLES.map(([key, q]) => `<button class="ex" type="button"><small>${DA.esc(DA.t(key))}</small>${DA.esc(q)}</button>`).join("");
-  $("examples").querySelectorAll(".ex").forEach((b, i) => { b.onclick = () => ask(EXAMPLES[i][1], EXAMPLES[i][2]); });
+  $("examples").querySelectorAll(".ex").forEach((b, i) => { b.onclick = () => ask(EXAMPLES[i][1]); });
 }
 
 let lastStatus = null;
@@ -359,21 +337,18 @@ document.addEventListener("da:lang", () => {
   renderExamples();
   renderStatus();
   loadChats();
-  setMode(mode);
   if (!current) $("chatTitle").textContent = DA.t("chat.new");
   else if (!busy) openChat(current);
 });
 
 renderExamples();
-setMode(mode);
 pollStatus();
 loadChats();
 if (!current) $("chatTitle").textContent = DA.t("chat.new");
-// Deep links: /chat?q=<question>[&mode=<mode>] asks it in a new chat; /chat?source=<chunk_id> opens that passage
+// Deep links: /chat?q=<question> asks it in a new chat; /chat?source=<chunk_id> opens that passage
 const params = new URLSearchParams(location.search);
 if (params.get("source")) viewer.open({ chunk_id: params.get("source") });
 if (params.get("q")) {
   history.replaceState(null, "", "/chat");  // don't ask again on reload
-  const m = params.get("mode");
-  ask(params.get("q").slice(0, 1000), DEFAULT_STAGES[m] ? m : mode);
+  ask(params.get("q").slice(0, 1000));
 }

@@ -46,7 +46,7 @@ cfg, web = engine.cfg, engine.cfg["web"]
 store = Store(resolve_path(web["db_path"]))
 
 app = FastAPI(title="SafetyAgent", docs_url=None, redoc_url=None, openapi_url=None)
-MODES = [m for m in web.get("modes", ["auto"]) if m in ("auto", "answer", "visual", "compare", "task_plan", "notice")]
+MODES = [m for m in web.get("modes", ["auto"]) if m in ("auto", "answer", "task_plan", "notice")]
 TEMPLATES = ("poster", "leaflet", "card", "tbm")
 PUBLIC_BASE = str(web.get("public_base_url", "http://127.0.0.1:8000")).rstrip("/")
 app.mount("/static", StaticFiles(directory=STATIC), name="static")
@@ -72,7 +72,7 @@ def admin_user(request: Request) -> str:
 
 def user_setup() -> str:
     s = store.get_setting("user_setup", web["default_user_setup"])
-    return s if s in cfg["retrieval"]["setups"] else "E"
+    return s if s in cfg["retrieval"]["setups"] else cfg["retrieval"]["default_setup"]
 
 
 def public_message(m: dict[str, Any], admin: bool = False) -> dict[str, Any]:
@@ -84,7 +84,8 @@ def public_message(m: dict[str, Any], admin: bool = False) -> dict[str, Any]:
         return out
     ev = {e["n"]: e for e in p.get("evidence", [])}
     out |= {k: p.get(k) for k in ("lang", "refused", "reason", "standalone", "translated", "total_s", "error",
-                                  "kind", "intent", "visual", "plan", "notice_id", "hazards_searched")}
+                                  "kind", "intent", "visual", "plan", "notice_id", "hazards_searched",
+                                  "search_query", "country")}
     out["kind"] = out.get("kind") or "answer"
     out["route_reason"] = (p.get("route") or {}).get("reason")
     out["passages"] = {str(n): {**(engine.passage(ev[n]["chunk_id"]) or {}), "n": n, "score": ev[n]["score"]}
@@ -138,12 +139,12 @@ def stream_answer(question: str, history: list[tuple[str, str]], setup: str, on_
 class AskBody(BaseModel):
     question: str = Field(min_length=1)
     lang: Literal["auto", "ko", "en"] = "auto"  # answer language; "auto" = same as the question
-    mode: str = "auto"                          # auto (the agent decides) or answer/visual/compare/task_plan/notice
+    mode: str = "auto"                          # the agent decides; admins may force answer/task_plan/notice
 
 
 class AdminAskBody(BaseModel):
     question: str = Field(min_length=1)
-    setup: str = "E"
+    setup: str = "F"
     mode: str = "auto"
 
 
@@ -585,7 +586,7 @@ def review(message_id: int, body: ReviewBody, name: str = Depends(admin_user)) -
 def admin_ask(body: AdminAskBody, _: str = Depends(admin_user)) -> StreamingResponse:
     if body.setup not in SETUP_INFO:
         raise HTTPException(422, "Unknown setup")
-    if body.mode not in ("auto", "answer", "visual", "compare", "task_plan", "notice"):
+    if body.mode not in ("auto", "answer", "task_plan", "notice"):
         raise HTTPException(422, "Unknown mode")
     if not engine.ready:
         raise HTTPException(503, engine.error or "SafetyAgent is starting up.")

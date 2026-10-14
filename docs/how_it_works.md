@@ -344,17 +344,41 @@ total.
 **What it is.** One entry point decides what a request needs and uses the right tool. All tools use the same
 search (Step 4) and the same rule: write only from the cited passages.
 
-| Intent | What happens | Model calls |
-|---|---|---|
-| answer | search → cited answer (Step 5) | 1 (+1 translation) |
-| visual | answer + a structured visual from the same passages | 2 |
-| compare | search, keep the best 3 Korean + 3 English passages → answer + Korea-vs-US table | 2 |
-| task_plan | split the job into ≤ 3 hazards → one search per hazard → cited plan + TBM script | 2 (+ translations) |
-| notice | search → poster content (headline, rules, do / don't, key numbers) → stored for editing | 1 |
-| chitchat | fixed reply about what the assistant can do; no search | 0 |
+**The planner.** Every request starts with one short model call with *structured output* (the model must return
+JSON that matches a schema). It reads the new message and the last three chat turns and returns:
 
-**Routing.** In "auto" mode one short model call with *structured output* (the model must return JSON that
-matches a schema) picks the intent. Users can also pick the mode themselves in the chat.
+| Field | Meaning | Example ("핼멧 안 쓰면 안 되는 작업 알려줘") |
+|---|---|---|
+| tool | answer, task_plan, notice or chitchat | answer |
+| visual | steps, checklist, limits, intervals, compare, or none (most questions need none) | checklist |
+| question | the message as one complete question; follow-ups are resolved ("OSHA에서는?" → the full question) | 안전모를 반드시 착용해야 하는 작업은? |
+| question_translated | the same full question in the other language; the reranker reads passages in that language against it | Which tasks require a safety helmet? |
+| query_ko, query_en | one search query per language, in the words the regulations use; output words ("make a poster", "보여줘") are dropped; article numbers are kept only if the user wrote them | 보호구의 지급 착용 안전모 물체 낙하 비래 추락 작업 |
+| country | KR, US or both; "only OSHA" searches only the US documents | both |
+
+The user does not pick a mode. Workers ask in their own words; the planner decides whether a chart, a job plan or a
+notice fits. (The admin test console can still force a tool.)
+
+| Tool | What happens | Model calls |
+|---|---|---|
+| answer | search with the question + both planner queries → cited answer (Step 5) | 1 + planner |
+| answer + visual | the same, then a structured visual from the same passages | 2 + planner |
+| answer + compare | search, keep the best 3 Korean + 3 English passages → answer + Korea-vs-US table | 2 + planner |
+| task_plan | split the job into ≤ 3 hazards (each with its own KO + EN query) → one search per hazard → cited plan + TBM script | 2 + planner |
+| notice | search → poster content (headline, rules, do / don't, key numbers) → stored for editing | 1 + planner |
+| chitchat | fixed reply about what the assistant can do; no search | planner only |
+
+**Why search with the user's words *and* the planner's words.** The planner fixes vocabulary (헬멧 → 안전모) and
+removes request words that would mislead keyword search ("포스터"), but a rewritten query can also lose
+something. Searching the original question and both rewritten queries, then letting the reranker decide, keeps
+the strengths of both. The chat shows the rewritten query ("Searched as …") so users and admins can see why a
+passage was found. This is setup F in the evaluation (setup E + the planner's queries and country filter).
+
+**Two mistakes found while measuring F** (fixed; details in the README): with three query versions, the reranker
+pool first kept only the top passage of each search list, and passages in the other language were reranked against
+the planner's keyword list. A reranker is trained on question–passage pairs, so it now gets the planner's full
+translated question; at least 2 passages per list reach it; and keyword search in one language is skipped when the
+country filter leaves only documents in the other language.
 
 **Why visuals are specs, not code.** The model never writes chart code or HTML. It fills one of five fixed
 types (steps, checklist, compare, limits, intervals) as JSON, and the web page draws them. That keeps the

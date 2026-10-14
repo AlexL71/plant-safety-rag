@@ -43,13 +43,14 @@ index:
   passage_header: true                # index "title | law part/chapter | clause heading" + chunk text
 
 retrieval:
-  default_setup: E                    # best on the dev split (2026-10-13); see eval/results/dev_v2
+  default_setup: F                    # E + the agent's search plan (2026-10-14); E was best before the planner
   setups:                             # ablation (Phase 3): A=BM25, B=dense, C=hybrid, D=hybrid+rerank
     A: {bm25: true,  dense: false, rerank: false}
     B: {bm25: false, dense: true,  rerank: false}
     C: {bm25: true,  dense: true,  rerank: false}
     D: {bm25: true,  dense: true,  rerank: true}
     E: {bm25: true,  dense: true,  rerank: true, translate: true}   # D + question translated to the other language
+    F: {bm25: true,  dense: true,  rerank: true, planner: true}     # D + planner queries (KO + EN, documents' words) + country filter
   query_translation:
     model: null                       # null = same as llm.model
     thinking_level: low               # translation needs little reasoning ("minimal" is not supported by gemini-3.8-flash)
@@ -70,12 +71,13 @@ reranker:
 answer:
   min_rerank_score:                   # refuse without calling the LLM if the best reranker score is below this
     E: 0.15                           # tuned on dev (2026-10-13): answerable min 0.367, unanswerable max 0.075
+    F: 0.15                           # same as E (F reranks the same way); not re-tuned
     D: 0.01                           # D scores cross-language pairs very low (0.02 for a correct passage)
     default: 0.0
   snippet_chars: 160                  # length of the source snippet shown under an answer
 
 evaluate:
-  answer_setups: [C, D, E]            # LLM answers only for these setups (cost); retrieval metrics for all
+  answer_setups: [C, D, E, F]         # LLM answers only for these setups (cost); retrieval metrics for all
   k_eval: 10                          # retrieve this many per question for MRR@10
 
 web:                                  # SafetyAgent web app (python -m app.server)
@@ -85,7 +87,7 @@ web:                                  # SafetyAgent web app (python -m app.serve
   admin_credentials: secrets/admin_credentials.json   # password hash only; create with: python -m app.auth
   page_cache_dir: cache/pages         # rendered PDF pages (PNG)
   page_zoom: 2.0                      # rendering scale (2 = sharp on high-DPI screens)
-  default_user_setup: E               # search setup for users until the admin changes it
+  default_user_setup: F               # search setup for users until the admin changes it
   max_chats_per_user: 50              # oldest chat is deleted when a browser creates the 51st
   max_turns_per_chat: 50              # questions per chat
   max_question_chars: 1000
@@ -93,7 +95,7 @@ web:                                  # SafetyAgent web app (python -m app.serve
   admin_session_hours: 8
   public_base_url: http://127.0.0.1:8000   # used in QR codes on printed notices; set to the LAN/server address for phones
   max_notices_per_user: 50
-  modes: [auto, answer, visual, compare, task_plan, notice]   # chat modes offered to users
+  modes: [auto, answer, task_plan, notice]   # users always use auto; admins can force a tool in the test console
 
 agent:                                # SafetyAgent tools (src/plant_rag/agent.py)
   plan_max_hazards: 3                 # task plan: hazards searched separately (each costs one rerank)

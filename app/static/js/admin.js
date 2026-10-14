@@ -12,7 +12,8 @@ const SETUP_RESULTS = {
   B: "Recall@5 32/34 · cross-language 14/16 · ~0.5 s",
   C: "Recall@5 23/34 · false refusals 10/34 · ~5 s",
   D: "Recall@5 30/34 · false refusals 4/34 · ~16 s",
-  E: "Recall@5 34/34 · false refusals 1/34 · ~23 s (recommended)",
+  E: "Recall@5 34/34 · false refusals 1/34 · ~23 s",
+  F: "Recall@5 34/34 + 24/24 (set 2) · false refusals 1/34 + 0/24 · ~15–30 s (recommended)",
 };
 const content = $("content");
 
@@ -85,7 +86,10 @@ function renderDetail(el, m, { review = null } = {}) {
   const route = m.route || {};
   const agent = `<div class="sub" style="display:flex;gap:6px;flex-wrap:wrap;margin-top:6px">
       <span class="chip accent">Mode ${DA.esc(m.mode || "auto")} → ${DA.esc(m.intent || "answer")}</span>
-      ${route.reason ? `<span class="chip muted">router: ${DA.esc(route.reason)}</span>` : ""}
+      ${route.reason ? `<span class="chip muted">planner: ${DA.esc(route.reason)}</span>` : ""}
+      ${route.visual && route.visual !== "none" ? `<span class="chip muted">visual: ${DA.esc(route.visual)}</span>` : ""}
+      ${route.country ? `<span class="chip muted">documents: ${DA.esc(route.country)}</span>` : ""}
+      ${route.query_ko || route.query_en ? `<span class="chip muted" style="white-space:normal">searched as: “${DA.esc(route.query_ko || "")}” / “${DA.esc(route.query_en || "")}”</span>` : ""}
       ${checkLine("visual check", m.visual_check)}${checkLine("plan check", m.plan_check)}${checkLine("notice check", m.notice_check)}
       ${m.visual_reason ? `<span class="chip muted">no visual: ${DA.esc(m.visual_reason)}</span>` : ""}</div>`;
   el.innerHTML = `
@@ -166,7 +170,7 @@ const TABS = {
       <form class="console" id="cform">
         <textarea class="input" id="cq" rows="2" placeholder="Question in Korean or English" required></textarea>
         <div style="display:grid;gap:8px"><select class="input" id="csetup">${Object.entries(s.setups).map(([k, d]) => `<option value="${k}" ${k === "E" ? "selected" : ""}>${k} · ${DA.esc(d)}</option>`).join("")}</select>
-          <select class="input" id="cmode">${["auto", "answer", "visual", "compare", "task_plan", "notice"].map((x) => `<option value="${x}">mode: ${x}</option>`).join("")}</select></div>
+          <select class="input" id="cmode">${["auto", "answer", "task_plan", "notice"].map((x) => `<option value="${x}">mode: ${x}</option>`).join("")}</select></div>
         <button class="btn btn-primary" type="submit">Ask</button>
       </form>
       <div class="card detail" id="cout" style="margin-top:18px"><div class="muted">The answer, passages and timings appear here.</div></div>`;
@@ -233,7 +237,7 @@ const TABS = {
         <div class="setup-opts" id="opts">${Object.entries(s.setups).map(([k, d]) => `
           <label class="opt ${k === sel ? "sel" : ""}" data-k="${k}"><input type="radio" name="setup" value="${k}" ${k === sel ? "checked" : ""}>
             <div><div class="nm">${k} · ${DA.esc(d)}</div><div class="ds">${SETUP_RESULTS[k] || ""}</div></div>
-            ${k === "E" ? `<span class="chip ok">Best measured</span>` : "<span></span>"}</label>`).join("")}</div>
+            ${k === "F" ? `<span class="chip ok">Best measured</span>` : "<span></span>"}</label>`).join("")}</div>
         <div style="display:flex;gap:12px;align-items:center"><button class="btn btn-primary btn-sm" id="saveSetup" type="button">Save</button><span class="small muted" id="setMsg"></span></div>
       </div>
       <div class="card" style="padding:22px;margin-top:18px">

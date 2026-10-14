@@ -59,15 +59,26 @@ class Retriever:
         self.timings: dict[str, float] = {}
 
     # ------------------------------------------------------------ stages
-    def bm25_search(self, query: str, k: int) -> list[tuple[int, float]]:
+    def bm25_search(self, query: str, k: int, allowed: np.ndarray | None = None) -> list[tuple[int, float]]:
         scores = self.bm25.get_scores(bm25_tokenize(query))
+        if allowed is not None:
+            scores = np.where(allowed, scores, 0.0)
         top = np.argsort(-scores)[:k]
         return [(int(i), float(scores[i])) for i in top if scores[i] > 0]
 
-    def dense_search(self, query: str, k: int) -> list[tuple[int, float]]:
+    def dense_search(self, query: str, k: int, allowed: np.ndarray | None = None) -> list[tuple[int, float]]:
         q = embed_texts([query], TASK_QUERY, self.cfg)
-        scores, idx = self.faiss.search(q, k)
-        return [(int(i), float(s)) for i, s in zip(idx[0], scores[0]) if i >= 0]
+        scores, idx = self.faiss.search(q, k if allowed is None else min(len(self.chunks), 4 * k))
+        hits = [(int(i), float(s)) for i, s in zip(idx[0], scores[0]) if i >= 0 and (allowed is None or allowed[i])]
+        return hits[:k]
+
+    def country_mask(self, country: str | None) -> np.ndarray | None:
+        """Chunks of one jurisdiction: "KR" = Korean documents, "US" = English (OSHA) documents, else all.
+        In this corpus the document language and the country coincide (see data/manifest.csv)."""
+        lang = {"KR": "ko", "US": "en"}.get((country or "").upper())
+        if not lang:
+            return None
+        return np.array([c["lang"] == lang for c in self.chunks])
 
     @staticmethod
     def rrf(lists: list[list[tuple[int, float]]], rrf_k: int) -> list[tuple[int, float]]:
@@ -120,6 +131,8 @@ class Retriever:
         """
         size = int(size or self.rcfg["rerank_candidates"])
         per_list = min(int(self.rcfg["rerank_min_per_list"]), size)
+        if len(lists) > 4:  # planner: up to 3 query versions x 2 methods; at least 2 per list still reach the reranker
+            per_list = max(2, min(per_list, size // len(lists)))
         pool: list[int] = []
         for lst in lists.values():
             for i, _ in lst[:per_list]:
@@ -134,9 +147,16 @@ class Retriever:
 
     # ------------------------------------------------------------ main entry
     def search(self, query: str, setup: str | None = None, k: int | None = None,
-               on_stage: Callable[[str], None] | None = None, rerank_candidates: int | None = None) -> list[Hit]:
-        """Return the top-k hits for `query` under `setup` (A–E). Stage times go to self.timings.
+               on_stage: Callable[[str], None] | None = None, rerank_candidates: int | None = None,
+               alt_queries: dict[str, str] | None = None, country: str | None = None) -> list[Hit]:
+        """Return the top-k hits for `query` under `setup` (A–F). Stage times go to self.timings.
         `rerank_candidates` overrides the config (the task planner reranks fewer passages per hazard).
+
+        Setup F ("planner": true) takes the agent's search plan: `alt_queries` = {"ko": ..., "en": ...} (the request
+        rewritten in the documents' words, in both languages) are searched next to the original question, and
+        `country` ("KR" / "US") limits the search to one jurisdiction. Passages in the other language are reranked
+        against alt_queries["question_translated"] (a full question; the reranker reads questions, not keyword lists).
+        Without a plan, F behaves like E.
 
         Setup E ("translate": true) also translates the question into the other corpus language (one cached
         LLM call), runs BM25 and dense search for both versions, and reranks each passage against the
@@ -150,8 +170,27 @@ class Retriever:
         report = on_stage or (lambda name: None)  # progress hook for the web app
 
         queries = {"orig": query}
+        query_lang: dict[str, str] = {}
         rerank_query: str | dict[str, str] = query
-        if s.get("translate"):
+        allowed = self.country_mask(country) if s.get("planner") else None
+        self.last_translation = None
+        if s.get("planner") and alt_queries:
+            from plant_rag.generate import detect_lang
+
+            q_lang = detect_lang(query)
+            query_lang["orig"] = q_lang
+            for lang in ("ko", "en"):
+                alt = (alt_queries.get(lang) or "").strip()
+                if alt and alt != query:
+                    queries[f"plan_{lang}"] = alt
+                    query_lang[f"plan_{lang}"] = lang
+            other = "en" if q_lang == "ko" else "ko"
+            # each passage is reranked against the question in its own language: the user's question, or the
+            # planner's translation of it (its keyword query only if there is no translation)
+            translated = (alt_queries.get("question_translated") or "").strip()
+            rerank_query = {q_lang: query, other: translated or alt_queries.get(other) or query}
+            self.last_translation = alt_queries.get(other)
+        elif s.get("translate") or s.get("planner"):
             from plant_rag.generate import detect_lang, translate_query
 
             report("translate")
@@ -165,15 +204,17 @@ class Retriever:
             self.last_translation = translated
 
         report("search")
+        only_lang = {"KR": "ko", "US": "en"}.get((country or "").upper()) if allowed is not None else None
         for tag, q in queries.items():
-            suffix = "" if tag == "orig" else "_tr"
-            if s["bm25"]:
+            suffix = "" if tag == "orig" else f"_{tag}"
+            # keywords in one language find nothing useful in documents of the other: skip that list
+            if s["bm25"] and not (only_lang and query_lang.get(tag, only_lang) != only_lang):
                 t0 = time.perf_counter()
-                lists["bm25" + suffix] = self.bm25_search(q, int(self.rcfg["bm25_top_k"]))
+                lists["bm25" + suffix] = self.bm25_search(q, int(self.rcfg["bm25_top_k"]), allowed)
                 self.timings["bm25"] = self.timings.get("bm25", 0.0) + time.perf_counter() - t0
             if s["dense"]:
                 t0 = time.perf_counter()
-                lists["dense" + suffix] = self.dense_search(q, int(self.rcfg["dense_top_k"]))
+                lists["dense" + suffix] = self.dense_search(q, int(self.rcfg["dense_top_k"]), allowed)
                 self.timings["dense"] = self.timings.get("dense", 0.0) + time.perf_counter() - t0  # incl. query embedding
         if not lists:
             raise ValueError(f"Setup {setup} enables neither BM25 nor dense search")

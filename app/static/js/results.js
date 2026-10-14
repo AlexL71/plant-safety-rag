@@ -1,2 +1,2 @@
-/* Measured results shown on the landing page (eval/results/test2_v1, test_v2 and agent_v2, 2026-10-14). */
-window.SA_RESULTS = { recall5: "57/58", cross: "27/28", refusals: "9/9", router: "42/42" };
+/* Measured results shown on the landing page: setup F, set 1 + set 2 (eval/results/test_v4, test2_v3, 2026-10-14). */
+window.SA_RESULTS = { recall5: "58/58", cross: "28/28", refusals: "9/9" };

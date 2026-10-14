@@ -192,25 +192,6 @@ def condense_question(question: str, history: list[tuple[str, str]], cfg: dict[s
     return out or question
 
 
-SEARCH_QUERY_PROMPT = """A user asks a workplace-safety assistant to MAKE something (a notice, poster, chart, table,
-comparison ...). Write ONE short search query that finds the rule text this request is about in Korean and US safety
-regulations and guides.
-- Drop the instructions about the output: make, create, draft, show, visualize, poster, notice, flyer, chart, table,
-  만들어 줘, 보여줘, 시각화, 포스터, 공지, 안내문, 노티스, 그래프, 표.
-- Use the words the regulations use and fix misspellings: 헬멧/핼멧 → 안전모, hard hat → head protection,
-  복장/옷 → 보호구 작업복, 지게차 → 지게차, 안전벨트 → 안전대 (for work at height).
-- Keep the language of the request. Output only the query.
-
-Request: {request}"""
-
-
-def make_search_query(request: str, cfg: dict[str, Any]) -> str:
-    """Turn a "make / show ..." request into a search query in the documents' vocabulary (one light cached call).
-    Without it, "…헬멧 … 노티스 만들어 줘" searches for 'notice' and 'make' and misses 안전모 (제32조)."""
-    out = call_llm_record(SEARCH_QUERY_PROMPT.format(request=request), light_cfg(cfg, 256))["text"].strip()
-    return out.strip('"').strip() or request
-
-
 # ------------------------------------------------------------------ answering
 
 @dataclass

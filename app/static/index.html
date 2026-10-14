@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title data-i18n="home.pageTitle">SafetyAgent · AI safety assistant for industrial sites</title>
+<title data-i18n="home.pageTitle">SafetyAgent · Safety rules for site workers</title>
 <meta name="description" content="Ask Korean and US safety rules in Korean or English. Answers, visuals, job plans and printable notices, every line linked to the clause it came from.">
 <link rel="icon" href="/brand/safetyagent_icon.svg" type="image/svg+xml">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
@@ -53,12 +53,16 @@
   .mock .poster .qr { width: 34px; height: 34px; background: conic-gradient(#111 25%, #fff 0 50%, #111 0 75%, #fff 0) 0 0 / 8px 8px; border-radius: 3px; }
   .mock .poster .ok { font-size: 9.5px; font-weight: 700; color: var(--ok); border: 1px solid var(--ok); border-radius: 99px; padding: 1px 6px; }
 
-  section.block { padding: 88px 0; }
+  section.block { padding: 56px 0 64px; }
+  .results { display: grid; grid-template-columns: repeat(4, 1fr); gap: 18px; margin-top: 36px; padding: 22px 26px;
+             border-radius: var(--radius); background: var(--bg); }
+  .results .num { font-size: 30px; font-weight: 800; color: var(--brand); letter-spacing: -.02em; }
+  .results .lbl { font-size: 13.5px; color: var(--ink-2); }
   section.alt { background: var(--bg); }
   .kicker { font-size: 13px; font-weight: 700; color: var(--accent); letter-spacing: .08em; text-transform: uppercase; }
   .block h2 { font-size: clamp(28px, 3.4vw, 38px); margin: 10px 0 14px; font-weight: 800; }
   .block p.sub { color: var(--ink-2); font-size: 17px; max-width: 740px; margin: 0; }
-  .grid { display: grid; gap: 18px; margin-top: 40px; }
+  .grid { display: grid; gap: 18px; }
   .g3 { grid-template-columns: repeat(3, 1fr); } .g4 { grid-template-columns: repeat(4, 1fr); }
   .feature { padding: 24px; } .feature h3 { font-size: 17px; margin: 14px 0 6px; } .feature p { margin: 0; color: var(--ink-2); font-size: 14.5px; }
   .ico { width: 42px; height: 42px; border-radius: 12px; background: var(--brand-50); color: var(--brand); display: grid; place-items: center; font-size: 20px; }
@@ -86,7 +90,8 @@
   footer .wrap { display: flex; gap: 20px; justify-content: space-between; flex-wrap: wrap; }
 
   @media (max-width: 920px) {
-    .hero .wrap, .g3, .g4, .flow { grid-template-columns: 1fr; }
+    .hero .wrap, .g3, .g4, .flow, .results { grid-template-columns: 1fr 1fr; }
+    .hero .wrap, .g3 { grid-template-columns: 1fr; }
     .mock .poster { position: relative; right: 0; bottom: 0; margin: 14px 0 0 auto; }
     nav.top .links { display: none; }
   }
@@ -96,8 +101,6 @@
 <nav class="top">
   <div class="wrap">
     <a href="/" aria-label="SafetyAgent home"><img class="logo" src="/brand/safetyagent_logo.svg" alt="SafetyAgent"></a>
-    <div class="links"><a href="#features" data-i18n="nav.features">Features</a><a href="#how" data-i18n="nav.how">How it works</a>
-      <a href="#results" data-i18n="nav.results">Results</a><a href="/notices" data-i18n="nav.notices">Safety notices</a></div>
     <div class="cta">
       <div class="seg ui-lang" role="group" aria-label="Interface language" data-i18n-attr="aria-label:ui.aria"><button type="button" data-ui-lang="en">EN</button><button type="button" data-ui-lang="ko">한국어</button></div>
       <a class="btn btn-ghost btn-sm" href="/admin" id="adminLink" data-i18n="nav.admin">Admin</a><a class="btn btn-primary btn-sm" href="/chat" data-i18n="nav.start">Start asking</a></div>
@@ -107,16 +110,14 @@
 <header class="hero">
   <div class="wrap">
     <div>
-      <span class="eyebrow" data-i18n="hero.eyebrow"><i></i>AI safety assistant · Korean &amp; US rules</span>
-      <h1 data-i18n="hero.title">Safety rules, answered with <em>the exact clause</em>.</h1>
-      <p class="lead" data-i18n="hero.lead">SafetyAgent answers workplace-safety questions from Korean and US rules, explains them with visuals,
-        plans the checks for a job and drafts notices you can print. Every line links to the clause it came from, and numbers are checked
-        against the source before you see them.</p>
+      <span class="eyebrow" data-i18n="hero.eyebrow"><i></i>Safety rules for site workers · Korean &amp; English</span>
+      <h1 data-i18n="hero.title">Check the safety rule <em>before you start work</em>.</h1>
+      <p class="lead" data-i18n="hero.lead">Ask in your own words, in Korean or English. SafetyAgent finds the rule in Korean and US
+        safety regulations, answers with the exact clause, and shows a chart or checklist when it helps.</p>
       <div class="actions">
         <a class="btn btn-primary" href="/chat" data-i18n="hero.ask">Ask a safety question →</a>
-        <a class="btn btn-ghost" href="#results" data-i18n="hero.see">See the measured results</a>
       </div>
-      <div class="trust" data-i18n="hero.trust"><span>Clause-level citations</span><span>Numbers checked against sources</span><span>Korean ↔ English</span></div>
+      <div class="trust" data-i18n="hero.trust"><span>Exact clause for every answer</span><span>Numbers checked against the source</span><span>Korean ↔ English</span></div>
     </div>
     <div class="mock" aria-hidden="true">
       <div class="card chat">
@@ -142,94 +143,25 @@
   </div>
 </header>
 
-<section class="block" id="problem">
+<section class="block" id="features">
   <div class="wrap">
-    <div class="kicker" data-i18n="problem.kicker">The problem</div>
-    <h2 data-i18n="problem.h">The rule exists. Finding it, explaining it and posting it takes hours.</h2>
-    <p class="sub" data-i18n="problem.sub">Site safety depends on the Occupational Safety and Health Act, the safety rules, KOSHA guides and, on
-      international projects, OSHA standards. A supervisor needs the exact requirement before work starts; workers need it in plain words,
-      sometimes in another language. Missing one requirement costs lives and, under Korean law, can make the company liable.</p>
-  </div>
-</section>
-
-<section class="block alt" id="features">
-  <div class="wrap">
-    <div class="kicker" data-i18n="feat.kicker">What SafetyAgent does</div>
-    <h2 data-i18n="feat.h">One assistant: ask, see, plan, post.</h2>
-    <p class="sub" data-i18n="feat.sub">An agent, not just a chatbot: it decides which tool fits the request, searches the rules, writes the
-      result and checks it before you see it.</p>
     <div class="grid g3">
-      <div class="card feature"><div class="ico">💬</div><h3 data-i18n="f1.h">Answers with proof</h3><p data-i18n="f1.p">Every statement cites the document, clause and page. Hover a number to read the clause; click to see it outlined in the original PDF.</p></div>
-      <div class="card feature"><div class="ico">📊</div><h3 data-i18n="f2.h">Explained as a visual</h3><p data-i18n="f2.p">Procedures become step flows, requirements become checklists, limits are drawn on a scale, deadlines on a timeline.</p></div>
-      <div class="card feature"><div class="ico">⚖️</div><h3 data-i18n="f3.h">Korea vs US side by side</h3><p data-i18n="f3.p">Ask in Korean and get the OSHA rule, or compare both countries' requirements in one table.</p></div>
-      <div class="card feature"><div class="ico amber">🧰</div><h3 data-i18n="f4.h">Plan a job</h3><p data-i18n="f4.p">Describe tomorrow's work: the agent finds the hazards, searches each one and returns permits, controls, checks, PPE and a TBM briefing.</p></div>
-      <div class="card feature"><div class="ico amber">📄</div><h3 data-i18n="f5.h">Notices you can print</h3><p data-i18n="f5.p">Posters, leaflets, messenger cards and TBM sheets, with QR codes to the clause and a second language for foreign workers. A person approves before posting.</p></div>
-      <div class="card feature"><div class="ico">🛡</div><h3 data-i18n="f6.h">Checked, or not shown</h3><p data-i18n="f6.p">Every line needs a source, and every number must appear in that source. If the documents don't cover a question, the answer is "not found".</p></div>
+      <div class="card feature"><div class="ico">💬</div><h3 data-i18n="f1.h">Ask, get the rule</h3><p data-i18n="f1.p">Plain questions, plain answers. Tap a number to read the clause in the original document.</p></div>
+      <div class="card feature"><div class="ico">📊</div><h3 data-i18n="f2.h">See it when it helps</h3><p data-i18n="f2.p">Steps, checklists, limits and deadlines are drawn for you, and Korean and US rules side by side.</p></div>
+      <div class="card feature"><div class="ico amber">📄</div><h3 data-i18n="f3.h">Share it on site</h3><p data-i18n="f3.p">Turn an answer into a notice or a TBM sheet, approved by a supervisor before posting.</p></div>
     </div>
-    <div class="tries"><a href="/chat?q=%EB%B0%80%ED%8F%90%EA%B3%B5%EA%B0%84%20%EC%A0%81%EC%A0%95%EA%B3%B5%EA%B8%B0%20%EA%B8%B0%EC%A4%80%EC%9D%84%20%EA%B7%B8%EB%9E%98%ED%94%84%EB%A1%9C%20%EB%B3%B4%EC%97%AC%EC%A4%98">📊 밀폐공간 적정공기 기준을 그래프로 보여줘</a>
-      <a href="/chat?q=Compare%20Korea%20and%20the%20US%3A%20from%20what%20height%20is%20fall%20protection%20required%3F">⚖️ Korea vs US: fall protection height</a>
-      <a href="/chat?q=We%20will%20weld%20inside%20a%20tank%20tomorrow.%20What%20must%20we%20prepare%3F&amp;mode=task_plan">🧰 Welding inside a tank tomorrow</a>
-      <a href="/chat?q=%EC%A7%80%EA%B2%8C%EC%B0%A8%20%EC%95%88%EC%A0%84%20%ED%8F%AC%EC%8A%A4%ED%84%B0%EB%A5%BC%20%EB%A7%8C%EB%93%A4%EC%96%B4%20%EC%A4%98&amp;mode=notice">📄 지게차 안전 포스터를 만들어 줘</a></div>
-  </div>
-</section>
-
-<section class="block" id="how">
-  <div class="wrap">
-    <div class="kicker" data-i18n="how.kicker">How it works</div>
-    <h2 data-i18n="how.h">Four steps, all visible while it works.</h2>
-    <div class="flow">
-      <div class="card st"><h3 data-i18n="s1.h">Understand</h3><p data-i18n="s1.p">A short model call decides what you need: an answer, a visual, a comparison, a job plan or a notice.</p></div>
-      <div class="card st"><h3 data-i18n="s2.h">Search</h3><p data-i18n="s2.p">Keyword and meaning search over 29 documents in both languages, then a reranker reads the best passages.</p></div>
-      <div class="card st"><h3 data-i18n="s3.h">Write</h3><p data-i18n="s3.p">The model writes only from those passages and cites each one. Job plans search every hazard separately.</p></div>
-      <div class="card st"><h3 data-i18n="s4.h">Check</h3><p data-i18n="s4.p">Lines without a source or with a number the source doesn't contain are removed. Notices wait for a person's approval.</p></div>
+    <div class="results" id="results">
+      <div><div class="num" id="st1">–</div><div class="lbl" data-i18n="s1">questions with the right clause found</div></div>
+      <div><div class="num" id="st2">–</div><div class="lbl" data-i18n="s2">Korean ↔ English questions found</div></div>
+      <div><div class="num" id="st3">–</div><div class="lbl" data-i18n="s3">"not found" when the rules don't cover it</div></div>
+      <div><div class="num">29</div><div class="lbl" data-i18n="s4">Korean and US safety documents</div></div>
     </div>
-    <div class="corpus" id="corpus"><span class="chip" data-i18n="corp.1">Occupational Safety and Health Act (KR)</span><span class="chip" data-i18n="corp.2">Safety rule, 674 articles (KR)</span>
-      <span class="chip" data-i18n="corp.3">Risk assessment guideline (KR)</span><span class="chip" data-i18n="corp.4">16 KOSHA guides</span>
-      <span class="chip accent" data-i18n="corp.5">9 OSHA standards (US)</span><span class="chip accent" data-i18n="corp.6">OSHA PSM booklet (US)</span></div>
-  </div>
-</section>
-
-<section class="block alt" id="modules">
-  <div class="wrap">
-    <div class="kicker" data-i18n="mod.kicker">Modules</div>
-    <h2 data-i18n="mod.h">Built and measured first. Cameras next.</h2>
-    <p class="sub" data-i18n="mod.sub">Built modules work and were evaluated. Planned modules are on the roadmap and not available yet.</p>
-    <div class="grid g3">
-      <div class="card module"><span class="chip ok" data-i18n="chip.built">Built</span><h3>Ask</h3><p data-i18n="m1.p">Cited answers in Korean or English, across both countries' rules, or an honest "not found".</p></div>
-      <div class="card module"><span class="chip ok" data-i18n="chip.built">Built</span><h3>Visualize · Compare</h3><p data-i18n="m2.p">Step flows, checklists, limit scales, timelines and Korea-vs-US tables, every element cited and checked.</p></div>
-      <div class="card module"><span class="chip ok" data-i18n="chip.built">Built</span><h3>Plan · Notices</h3><p data-i18n="m3.p">Job plans with a TBM briefing, and printable notices with QR codes, second language and approval.</p></div>
-      <div class="card module planned"><span class="chip muted" data-i18n="chip.planned">Planned</span><h3>Camera watch</h3><p data-i18n="m4.p">PPE and danger-zone detection on site cameras, with every alert linked to the rule it breaks.</p></div>
-      <div class="card module planned"><span class="chip muted" data-i18n="chip.planned">Planned</span><h3>Site photo review</h3><p data-i18n="m5.p">Upload a photo of a work area and get the visible hazards with the rules that apply.</p></div>
-      <div class="card module planned"><span class="chip muted" data-i18n="chip.planned">Planned</span><h3>Danger anticipation</h3><p data-i18n="m6.p">A video model that warns before an accident happens, measured by how many seconds of warning it gives.</p></div>
-    </div>
-  </div>
-</section>
-
-<section class="block" id="results">
-  <div class="wrap">
-    <div class="kicker" data-i18n="res.kicker">Why trust it</div>
-    <h2 data-i18n="res.h">Measured on questions it never saw.</h2>
-    <p class="sub" data-i18n="res.sub">Bilingual questions written and verified against the documents, never used to tune the system.</p>
-    <div class="grid g4" id="stats">
-      <div class="card stat"><div class="num" id="st1">–</div><div class="lbl" data-i18n="s1">answerable questions with the right clause in the top 5 results</div></div>
-      <div class="card stat"><div class="num" id="st2">–</div><div class="lbl" data-i18n="s2">cross-language questions (Korean ↔ English) found</div></div>
-      <div class="card stat"><div class="num" id="st3">–</div><div class="lbl" data-i18n="s3">questions outside the documents correctly answered "not found"</div></div>
-      <div class="card stat"><div class="num" id="st4">–</div><div class="lbl" data-i18n="s4">requests routed to the right tool by the agent</div></div>
-    </div>
-    <p class="caveat" data-i18n="res.caveat">Caveat: small test sets; questions and grading were checked by AI, not by a human safety expert.</p>
-  </div>
-</section>
-
-<section class="final">
-  <div class="wrap">
-    <h2 data-i18n="final.h">Work safely, with the rule in hand.</h2>
-    <p data-i18n="final.p">Answers with clause references, visuals, job plans and notices, or an honest "not found".</p>
-    <a class="btn btn-primary" href="/chat" data-i18n="final.btn">Start asking →</a>
+    <p class="caveat" data-i18n="res.caveat">Measured on held-out test questions; checked by AI, not by a human safety expert.</p>
   </div>
 </section>
 
 <footer>
-  <div class="wrap"><span>© SafetyAgent</span><span data-i18n="footer.note">SafetyAgent is a reference tool. It does not replace a safety professional, legal advice or your site's formal safety procedures.</span></div>
+  <div class="wrap"><span>© SafetyAgent</span><span data-i18n="footer.note">SafetyAgent is a reference tool. It does not replace your supervisor, a safety professional or your site's safety procedures.</span></div>
 </footer>
 <script src="/static/js/common.js"></script>
 <script src="/static/js/i18n.js"></script>
@@ -248,9 +180,8 @@
     showAdmin();
   }).catch(() => {});
   document.addEventListener("da:lang", showAdmin);
-  // Measured results (filled from js/results.js, written by the evaluation)
   const R = window.SA_RESULTS || {};
-  for (const [id, v] of Object.entries({ st1: R.recall5, st2: R.cross, st3: R.refusals, st4: R.router })) {
+  for (const [id, v] of Object.entries({ st1: R.recall5, st2: R.cross, st3: R.refusals })) {
     if (v) document.getElementById(id).textContent = v;
   }
 </script>

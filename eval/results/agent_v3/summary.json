@@ -1,0 +1,67 @@
+{
+  "router": {
+    "all_checks": "52/52",
+    "tool": "52/52",
+    "visual": "16/16",
+    "country": "13/13",
+    "search_terms": "9/9",
+    "planner_cases_all_checks": "10/10",
+    "by_language": {
+      "ko": "26/26",
+      "en": "26/26"
+    },
+    "visual_added_to_plain_questions": "7/12",
+    "confusion": {
+      "answer": {
+        "answer": 28
+      },
+      "task_plan": {
+        "task_plan": 7
+      },
+      "notice": {
+        "notice": 10
+      },
+      "chitchat": {
+        "chitchat": 7
+      }
+    },
+    "wrong": []
+  },
+  "visuals": {
+    "produced": "11/12",
+    "requested_type": "11/12",
+    "elements": {
+      "elements": 57,
+      "kept": 54,
+      "dropped": 3,
+      "number_not_in_source": 3
+    },
+    "not_produced": {
+      "v11": "low_score"
+    }
+  },
+  "plans": {
+    "produced": "6/6",
+    "hazard_groups_covered": "7/7",
+    "items": {
+      "elements": 132,
+      "kept": 132,
+      "dropped": 0
+    }
+  },
+  "notices": {
+    "produced": "6/6",
+    "lines": {
+      "elements": 64,
+      "kept": 64,
+      "dropped": 0
+    },
+    "translations_all_numbers_kept": "4/6",
+    "translated_lines_numbers_kept": "73/76"
+  },
+  "median_seconds": {
+    "visual": 32.9,
+    "plan": 69.1,
+    "notice": 31.1
+  }
+}

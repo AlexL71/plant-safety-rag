@@ -1,15 +1,15 @@
-{"id": "v01", "part": "visual", "mode": "visual", "lang": "ko", "text": "밀폐공간 작업 허가 절차를 단계별로 보여줘", "expect_type": "steps"}
-{"id": "v02", "part": "visual", "mode": "visual", "lang": "en", "text": "Show the steps for applying lockout or tagout devices as a flow", "expect_type": "steps"}
-{"id": "v03", "part": "visual", "mode": "visual", "lang": "ko", "text": "용접·용단 작업 전 화재예방 확인사항을 체크리스트로 보여줘", "expect_type": "checklist"}
-{"id": "v04", "part": "visual", "mode": "visual", "lang": "en", "text": "Show as a checklist which protective equipment Korean rules require for which kind of work", "expect_type": "checklist"}
-{"id": "v05", "part": "visual", "mode": "visual", "lang": "ko", "text": "밀폐공간 적정공기 기준을 그래프로 보여줘", "expect_type": "limits"}
-{"id": "v06", "part": "visual", "mode": "visual", "lang": "en", "text": "Chart the guardrail height requirements in 29 CFR 1926.502", "expect_type": "limits"}
-{"id": "v07", "part": "visual", "mode": "visual", "lang": "ko", "text": "위험성평가 최초 실시 시기와 정기 재검토 주기를 타임라인으로 보여줘", "expect_type": "intervals"}
-{"id": "v08", "part": "visual", "mode": "visual", "lang": "en", "text": "Show on a timeline how often forklift operators must be evaluated and how long canceled confined-space permits are kept", "expect_type": "intervals"}
-{"id": "v09", "part": "visual", "mode": "compare", "lang": "ko", "text": "한국과 미국의 밀폐공간 산소 농도 기준을 비교해 줘", "expect_type": "compare"}
-{"id": "v10", "part": "visual", "mode": "compare", "lang": "en", "text": "Compare the fire watch rules after welding in Korea and the US", "expect_type": "compare"}
-{"id": "v11", "part": "visual", "mode": "compare", "lang": "en", "text": "Compare from what height fall protection is required in Korea and the US", "expect_type": "compare"}
-{"id": "v12", "part": "visual", "mode": "compare", "lang": "ko", "text": "잠금·표지(LOTO) 절차 정기점검 주기를 한국과 미국 기준으로 비교해 줘", "expect_type": "compare"}
+{"id": "v01", "part": "visual", "mode": "auto", "lang": "ko", "text": "밀폐공간 작업 허가 절차를 단계별로 보여줘", "expect_type": "steps"}
+{"id": "v02", "part": "visual", "mode": "auto", "lang": "en", "text": "Show the steps for applying lockout or tagout devices as a flow", "expect_type": "steps"}
+{"id": "v03", "part": "visual", "mode": "auto", "lang": "ko", "text": "용접·용단 작업 전 화재예방 확인사항을 체크리스트로 보여줘", "expect_type": "checklist"}
+{"id": "v04", "part": "visual", "mode": "auto", "lang": "en", "text": "Show as a checklist which protective equipment Korean rules require for which kind of work", "expect_type": "checklist"}
+{"id": "v05", "part": "visual", "mode": "auto", "lang": "ko", "text": "밀폐공간 적정공기 기준을 그래프로 보여줘", "expect_type": "limits"}
+{"id": "v06", "part": "visual", "mode": "auto", "lang": "en", "text": "Chart the guardrail height requirements in 29 CFR 1926.502", "expect_type": "limits"}
+{"id": "v07", "part": "visual", "mode": "auto", "lang": "ko", "text": "위험성평가 최초 실시 시기와 정기 재검토 주기를 타임라인으로 보여줘", "expect_type": "intervals"}
+{"id": "v08", "part": "visual", "mode": "auto", "lang": "en", "text": "Show on a timeline how often forklift operators must be evaluated and how long canceled confined-space permits are kept", "expect_type": "intervals"}
+{"id": "v09", "part": "visual", "mode": "auto", "lang": "ko", "text": "한국과 미국의 밀폐공간 산소 농도 기준을 비교해 줘", "expect_type": "compare"}
+{"id": "v10", "part": "visual", "mode": "auto", "lang": "en", "text": "Compare the fire watch rules after welding in Korea and the US", "expect_type": "compare"}
+{"id": "v11", "part": "visual", "mode": "auto", "lang": "en", "text": "Compare from what height fall protection is required in Korea and the US", "expect_type": "compare"}
+{"id": "v12", "part": "visual", "mode": "auto", "lang": "ko", "text": "잠금·표지(LOTO) 절차 정기점검 주기를 한국과 미국 기준으로 비교해 줘", "expect_type": "compare"}
 {"id": "p01", "part": "plan", "mode": "task_plan", "lang": "ko", "text": "내일 탱크 내부에서 용접 작업을 합니다. 무엇을 준비하고 점검해야 하나요?", "expect_hazards": [["용접", "용단", "화재", "화기", "weld", "fire", "hot work"], ["밀폐", "산소", "질식", "confined", "oxygen"]]}
 {"id": "p02", "part": "plan", "mode": "task_plan", "lang": "en", "text": "Next week we replace a pump motor on a line that still holds pressure. What must the crew prepare?", "expect_hazards": [["lockout", "tagout", "energy", "잠금", "에너지", "stored"]]}
 {"id": "p03", "part": "plan", "mode": "task_plan", "lang": "ko", "text": "다음 주 지붕 위 3m 높이에서 배관 보수 작업을 합니다. 작업 전 계획을 세워 주세요.", "expect_hazards": [["추락", "안전대", "난간", "높이", "fall", "harness", "guardrail"]]}

@@ -1,15 +1,17 @@
-"""Evaluate the agent layer: routing, visuals, job plans and notices.
+"""Evaluate the agent layer: the planner, visuals, job plans and notices.
 
-    python -m plant_rag.eval_agent --part router --run agent_v1        # 36 requests, one light model call each
-    python -m plant_rag.eval_agent --part tasks --run agent_v1         # 12 visuals + 6 plans + 6 notices (searches)
-    python -m plant_rag.eval_agent --part all --run agent_v1
+    python -m plant_rag.eval_agent --part router --run agent_v3        # 52 requests, one light model call each
+    python -m plant_rag.eval_agent --part tasks --run agent_v3         # 12 visuals + 6 plans + 6 notices (searches)
+    python -m plant_rag.eval_agent --part all --run agent_v3
 
-Inputs: eval/agent/router_cases.jsonl (request + expected intent) and eval/agent/task_cases.jsonl.
+Inputs: eval/agent/router_cases.jsonl (request, optional chat history, and the expected tool; optionally the expected
+visual ("any" = any type), country, and terms of which at least one must appear in the planner's search queries)
+and eval/agent/task_cases.jsonl.
 Outputs in eval/results/<run>/: router.jsonl, tasks.jsonl (one row per case, with the produced visual / plan /
 notice, its evidence ids and the automatic check statistics), and summary.json.
 
 Automatic metrics (no human needed):
-- router: accuracy and a confusion table per intent.
+- planner: tool accuracy with a confusion table, and visual / country / search-term accuracy where a case sets them.
 - visuals: produced %, requested type produced %, elements kept after the citation check + numbers guard.
 - plans: produced %, expected hazard groups covered (keyword match in hazard names and controls), items kept.
 - notices: produced %, lines kept, translation numbers preserved (line checks).
@@ -53,14 +55,30 @@ def run_router(cfg: dict[str, Any], out: Path) -> list[dict]:
                 rows.append(done[c["id"]])
                 continue
             t0 = time.perf_counter()
-            r = agent.route_request(c["text"], cfg)
-            row = {**c, "predicted": r["intent"], "visual_type": r["visual_type"], "reason": r["reason"],
-                   "correct": r["intent"] == c["intent"], "seconds": round(time.perf_counter() - t0, 2)}
+            r = agent.plan_request(c["text"], [tuple(t) for t in c.get("history", [])], cfg)
+            row = {**c, "predicted": r["tool"], "predicted_visual": r["visual"], "predicted_country": r["country"],
+                   "question": r["question"], "query_ko": r["query_ko"], "query_en": r["query_en"], "reason": r["reason"],
+                   "seconds": round(time.perf_counter() - t0, 2)}
+            row |= _grade_plan(c, r)
             f.write(json.dumps(row, ensure_ascii=False) + "\n")
             f.flush()
             rows.append(row)
-            print(f"{c['id']} {c['intent']:>9} -> {r['intent']:<9} {'ok' if row['correct'] else 'WRONG'}", flush=True)
+            print(f"{c['id']} {c['tool']:>9} -> {r['tool']:<9} {r['visual']:<9} {r['country']:<4} "
+                  f"{'ok' if row['correct'] else 'WRONG'} | {r['query_ko']} | {r['query_en']}", flush=True)
     return rows
+
+
+def _grade_plan(case: dict, plan: dict) -> dict[str, bool]:
+    """Checks for one planner output; a check is only made when the case sets that field."""
+    g = {"tool_ok": plan["tool"] == case["tool"]}
+    if "visual" in case:
+        g["visual_ok"] = plan["visual"] != "none" if case["visual"] == "any" else plan["visual"] == case["visual"]
+    if "country" in case:
+        g["country_ok"] = plan["country"] == case["country"]
+    if "terms" in case:
+        queries = f"{plan['query_ko']} {plan['query_en']}".lower()
+        g["terms_ok"] = any(t.lower() in queries for t in case["terms"])
+    return g | {"correct": all(g.values())}
 
 
 def _hazard_coverage(plan: dict | None, groups: list[list[str]]) -> tuple[int, int]:
@@ -85,7 +103,7 @@ def run_tasks(cfg: dict[str, Any], out: Path, setup: str) -> list[dict]:
             t0 = time.perf_counter()
             res = agent.run(c["text"], [], retriever, cfg, setup, mode=c["mode"], lang=c["lang"])
             hits = res.pop("evidence_hits", [])
-            row = {**c, "intent": res["intent"], "refused": res.get("refused"), "reason": res.get("reason"),
+            row = {**c, "intent": res["intent"], "plan_route": res.get("route"), "refused": res.get("refused"), "reason": res.get("reason"),
                    "evidence": [h.chunk["chunk_id"] for h in hits], "seconds": round(time.perf_counter() - t0, 1)}
             if c["part"] == "visual":
                 v = res.get("visual")
@@ -115,11 +133,22 @@ def summarize(router: list[dict], tasks: list[dict]) -> dict[str, Any]:
     if router:
         conf: dict[str, Counter] = defaultdict(Counter)
         for r in router:
-            conf[r["intent"]][r["predicted"]] += 1
-        s["router"] = {"accuracy": f"{sum(r['correct'] for r in router)}/{len(router)}",
-                       "by_language": {lang: f"{sum(r['correct'] for r in router if r['lang'] == lang)}/"
-                                             f"{sum(1 for r in router if r['lang'] == lang)}" for lang in ("ko", "en")},
-                       "confusion": {k: dict(v) for k, v in conf.items()}}
+            conf[r["tool"]][r["predicted"]] += 1
+
+        def acc(rows: list[dict], key: str) -> str:
+            graded = [r for r in rows if key in r]
+            return f"{sum(r[key] for r in graded)}/{len(graded)}"
+
+        planner_cases = [r for r in router if r["id"].startswith("q")]
+        s["router"] = {"all_checks": acc(router, "correct"), "tool": acc(router, "tool_ok"),
+                       "visual": acc(router, "visual_ok"), "country": acc(router, "country_ok"),
+                       "search_terms": acc(router, "terms_ok"),
+                       "planner_cases_all_checks": acc(planner_cases, "correct"),
+                       "by_language": {lang: acc([r for r in router if r["lang"] == lang], "correct") for lang in ("ko", "en")},
+                       "visual_added_to_plain_questions": acc([r | {"v": r["predicted_visual"] != "none"} for r in router
+                                                               if r["tool"] == "answer" and "visual" not in r], "v"),
+                       "confusion": {k: dict(v) for k, v in conf.items()},
+                       "wrong": [r["id"] for r in router if not r["correct"]]}
 
     def checks(rows: list[dict], key: str) -> dict[str, int]:
         total: Counter = Counter()
@@ -160,14 +189,14 @@ def main() -> None:
     ap.add_argument("--config", default="configs/config.yaml")
     ap.add_argument("--part", choices=["router", "tasks", "all"], default="all")
     ap.add_argument("--run", required=True)
-    ap.add_argument("--setup", default="E")
+    ap.add_argument("--setup", default=None, help="search setup (default: default_setup in the config)")
     args = ap.parse_args()
     logging.basicConfig(level=logging.WARNING, format="%(levelname)s %(name)s: %(message)s")
     cfg = load_config(args.config)
     run_dir = REPO_ROOT / "eval" / "results" / args.run
     run_dir.mkdir(parents=True, exist_ok=True)
     router = run_router(cfg, run_dir / "router.jsonl") if args.part in ("router", "all") else read_jsonl(run_dir / "router.jsonl")
-    tasks = run_tasks(cfg, run_dir / "tasks.jsonl", args.setup) if args.part in ("tasks", "all") else read_jsonl(run_dir / "tasks.jsonl")
+    tasks = run_tasks(cfg, run_dir / "tasks.jsonl", args.setup or cfg["retrieval"]["default_setup"]) if args.part in ("tasks", "all") else read_jsonl(run_dir / "tasks.jsonl")
     summary = summarize(router, tasks)
     (run_dir / "summary.json").write_text(json.dumps(summary, ensure_ascii=False, indent=2), encoding="utf-8")
     print(json.dumps(summary, ensure_ascii=False, indent=2))

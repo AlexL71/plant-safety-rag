@@ -54,6 +54,7 @@
   .bubble.refused { background: #fbfcff; border-style: dashed; }
   .refused-head { display: flex; align-items: center; gap: 8px; font-weight: 700; color: var(--ink-2); margin-bottom: 4px; }
   .meta-line { margin-top: 10px; display: flex; gap: 8px; flex-wrap: wrap; align-items: center; font-size: 12px; color: var(--muted); }
+  .searched { margin-top: 6px; font-size: 12px; color: var(--muted); }
   .bubble .actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--line-2); }
   .bubble .actions .spinner { width: 12px; height: 12px; }
   .bubble.wide .vis { margin-left: -8px; margin-right: -8px; }
@@ -79,10 +80,9 @@
   .bubble { transition: opacity .18s ease; } .bubble.leaving { opacity: 0; }
   .bubble.reveal { animation: rise .3s ease-out; }
   /* mode + answer language */
-  .lang-row { max-width: 860px; margin: 0 auto 8px; display: flex; justify-content: space-between; align-items: center; gap: 10px;
+  .lang-row { max-width: 860px; margin: 0 auto 8px; display: flex; justify-content: flex-end; align-items: center; gap: 10px;
               font-size: 12.5px; color: var(--muted); flex-wrap: wrap; }
   .lang-row .grp { display: flex; align-items: center; gap: 8px; }
-  #modeSeg button { padding: 4px 10px; }
   /* empty state */
   .empty { max-width: 800px; margin: 0 auto; padding: 7vh 28px 20px; text-align: center; }
   .empty img { width: 64px; height: 64px; margin: 0 auto 18px; display: block; }
@@ -138,26 +138,15 @@
   <div class="scroll" id="scroll">
     <div id="emptyState" class="empty">
       <img src="/brand/safetyagent_icon.svg" alt="">
-      <h1 data-i18n="empty.h">How can I help you work safely?</h1>
-      <p data-i18n="empty.p">Ask about Korean and US safety rules in Korean or English. Every answer cites the clause. I can also show
-        rules as a visual, compare Korea and the US, plan the checks for a job, and draft a notice to print.</p>
+      <h1 data-i18n="empty.h">Check a safety rule before you start</h1>
+      <p data-i18n="empty.p">Ask in Korean or English, in your own words. Every answer shows the exact clause it comes from, with a chart
+        or checklist when that helps.</p>
       <div class="examples" id="examples"></div>
     </div>
     <div class="thread" id="thread"></div>
   </div>
   <div class="composer-wrap">
     <div class="lang-row">
-      <div class="grp">
-        <span id="modeLabel" data-i18n="mode.label">Mode</span>
-        <div class="seg" id="modeSeg" role="group" aria-labelledby="modeLabel">
-          <button type="button" data-mode="auto" data-i18n="mode.auto" data-i18n-attr="title:mode.autoTitle" title="The agent decides">Auto</button>
-          <button type="button" data-mode="answer" data-i18n="mode.answerShort">Q&amp;A</button>
-          <button type="button" data-mode="visual" data-i18n="mode.visual">Visual</button>
-          <button type="button" data-mode="compare" data-i18n="mode.compare">KR vs US</button>
-          <button type="button" data-mode="task_plan" data-i18n="mode.task_plan">Job plan</button>
-          <button type="button" data-mode="notice" data-i18n="mode.notice">Notice</button>
-        </div>
-      </div>
       <div class="grp">
         <span id="langLabel" data-i18n="alang.label">Answer in</span>
         <div class="seg" id="langSeg" role="group" aria-labelledby="langLabel">
@@ -170,7 +159,7 @@
     </div>
     <form class="composer" id="composer">
       <textarea id="input" rows="1" placeholder="Ask a safety question…" aria-label="Your question"
-        data-i18n-attr="aria-label:input.aria"></textarea>
+        data-i18n-attr="placeholder:input.ph; aria-label:input.aria"></textarea>
       <button class="send" id="send" type="submit" aria-label="Send" data-i18n-attr="aria-label:send.aria">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5M5 12l7-7 7 7"/></svg>
       </button>

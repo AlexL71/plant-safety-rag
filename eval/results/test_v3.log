@@ -1,0 +1,44 @@
+Loading weights:   0%|          | 0/393 [00:00<?, ?it/s]Loading weights:   1%|          | 2/393 [00:00<00:22, 17.55it/s]Loading weights:   2%|▏         | 8/393 [00:00<00:09, 41.15it/s]Loading weights:   4%|▍         | 15/393 [00:00<00:07, 51.19it/s]Loading weights:   5%|▌         | 21/393 [00:00<00:06, 53.35it/s]Loading weights:   7%|▋         | 27/393 [00:00<00:07, 46.22it/s]Loading weights:   9%|▉         | 36/393 [00:00<00:06, 57.39it/s]Loading weights:  11%|█         | 42/393 [00:00<00:06, 53.50it/s]Loading weights:  12%|█▏        | 49/393 [00:00<00:06, 49.46it/s]Loading weights:  15%|█▍        | 57/393 [00:01<00:06, 55.30it/s]Loading weights:  17%|█▋        | 65/393 [00:01<00:05, 57.40it/s]Loading weights:  18%|█▊        | 71/393 [00:01<00:05, 55.97it/s]Loading weights:  20%|█▉        | 77/393 [00:01<00:06, 50.32it/s]Loading weights:  21%|██        | 83/393 [00:01<00:05, 51.90it/s]Loading weights:  23%|██▎       | 91/393 [00:01<00:05, 52.32it/s]Loading weights:  27%|██▋       | 106/393 [00:01<00:03, 73.02it/s]Loading weights:  32%|███▏      | 125/393 [00:01<00:02, 101.29it/s]Loading weights:  35%|███▍      | 136/393 [00:02<00:02, 89.13it/s] Loading weights: 100%|██████████| 393/393 [00:02<00:00, 175.71it/s]
+[1/40] F q002 gold@1  (104.4s)
+[2/40] F q003 gold@1  (39.3s)
+[3/40] F q005 gold@1  (21.3s)
+[4/40] F q006 gold@1  (20.8s)
+[5/40] F q008 gold@1  (16.3s)
+[6/40] F q009 gold@1  (26.1s)
+[7/40] F q010 gold@1  (16.0s)
+[8/40] F q011 gold@1  (17.5s)
+[9/40] F q012 gold@1  (15.0s)
+[10/40] F q014 gold@1  (13.8s)
+[11/40] F q016 gold@1  (20.9s)
+[12/40] F q018 gold@1  (21.5s)
+[13/40] F q020 gold@1  (19.2s)
+[14/40] F q021 gold@1  (18.4s)
+[15/40] F q022 gold@1  (19.4s)
+[16/40] F q023 gold@1  (17.3s)
+[17/40] F q024 gold@1  (15.0s)
+[18/40] F q025 gold@1  (17.5s)
+[19/40] F q026 gold@1  (15.2s)
+[20/40] F q027 gold@1  (15.4s)
+[21/40] F q028 gold@1  (18.2s)
+[22/40] F q029 gold@1  (32.4s)
+[23/40] F q030 gold@1 refused (23.7s)
+[24/40] F q031 gold@1  (23.1s)
+[25/40] F q032 gold@1  (26.4s)
+[26/40] F q033 gold@1  (22.7s)
+[27/40] F q034 gold@1  (18.6s)
+[28/40] F q036 gold@1  (16.5s)
+[29/40] F q040 gold@1  (19.1s)
+[30/40] F q042 gold@1  (20.4s)
+[31/40] F q044 gold@1  (16.3s)
+[32/40] F q047 gold@2  (18.5s)
+[33/40] F q048 gold@1  (18.2s)
+[34/40] F q050 gold@1  (17.2s)
+[35/40] F q052 gold@- refused (18.3s)
+[36/40] F q054 gold@- refused (18.6s)
+[37/40] F q055 gold@- refused (88.6s)
+[38/40] F q057 gold@- refused (28.1s)
+[39/40] F q059 gold@- refused (18.9s)
+[40/40] F q060 gold@- refused (24.4s)
+{"setup": "F", "questions": 40, "recall@5": "34/34 = 100%", "recall@5_cross_lingual": "16/16 = 100%", "mrr@10": "0.985", "median_search_s": "18.9", "correct_refusals": "6/6 = 100%", "false_refusals": "1/34 = 3%", "answers_citing_gold": "33/33 = 100%", "citation_precision": "55/68 = 81%", "median_llm_s": "4.7"}
+
+Results: C:\Users\dadab\OneDrive\Рабочий стол\plant-safety-rag\eval\results\test_v3

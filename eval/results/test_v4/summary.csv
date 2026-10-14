@@ -1,0 +1,2 @@
+﻿setup,questions,recall@5,recall@5_cross_lingual,mrr@10,median_search_s,correct_refusals,false_refusals,answers_citing_gold,citation_precision,median_llm_s
+F,40,34/34 = 100%,16/16 = 100%,0.966,28.8,6/6 = 100%,1/34 = 3%,33/33 = 100%,53/63 = 84%,5.4

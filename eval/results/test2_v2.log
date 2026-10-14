@@ -1,0 +1,31 @@
+Loading weights:   0%|          | 0/393 [00:00<?, ?it/s]Loading weights:   1%|▏         | 5/393 [00:00<00:08, 43.73it/s]Loading weights:   4%|▍         | 17/393 [00:00<00:04, 82.06it/s]Loading weights:   7%|▋         | 26/393 [00:00<00:06, 56.03it/s]Loading weights:   8%|▊         | 33/393 [00:00<00:06, 51.60it/s]Loading weights:  10%|▉         | 39/393 [00:00<00:08, 43.15it/s]Loading weights:  11%|█         | 44/393 [00:00<00:09, 36.29it/s]Loading weights:  14%|█▍        | 55/393 [00:01<00:08, 40.86it/s]Loading weights:  15%|█▌        | 60/393 [00:01<00:08, 41.27it/s]Loading weights:  18%|█▊        | 70/393 [00:01<00:07, 45.16it/s]Loading weights:  21%|██        | 83/393 [00:01<00:05, 61.73it/s]Loading weights:  24%|██▎       | 93/393 [00:01<00:04, 65.08it/s]Loading weights:  26%|██▌       | 101/393 [00:01<00:04, 61.66it/s]Loading weights:  27%|██▋       | 108/393 [00:02<00:04, 58.65it/s]Loading weights:  29%|██▉       | 115/393 [00:02<00:05, 54.58it/s]Loading weights:  31%|███       | 121/393 [00:02<00:04, 55.52it/s]Loading weights:  33%|███▎      | 129/393 [00:02<00:04, 55.98it/s]Loading weights:  36%|███▌      | 142/393 [00:02<00:03, 63.90it/s]Loading weights: 100%|██████████| 393/393 [00:02<00:00, 147.80it/s]
+[1/27] F q061 gold@1  (72.4s)
+[2/27] F q062 gold@1  (17.8s)
+[3/27] F q063 gold@1  (25.1s)
+[4/27] F q064 gold@1  (18.3s)
+[5/27] F q065 gold@1  (16.6s)
+[6/27] F q066 gold@1  (18.0s)
+[7/27] F q067 gold@1  (22.3s)
+[8/27] F q068 gold@1  (17.8s)
+[9/27] F q069 gold@1  (17.6s)
+[10/27] F q070 gold@1  (25.1s)
+[11/27] F q071 gold@1  (23.2s)
+[12/27] F q072 gold@1  (16.8s)
+[13/27] F q073 gold@- refused (15.5s)
+[14/27] F q074 gold@1  (14.2s)
+[15/27] F q075 gold@1  (29.2s)
+[16/27] F q076 gold@5  (17.0s)
+[17/27] F q077 gold@2  (14.8s)
+[18/27] F q078 gold@1  (14.8s)
+[19/27] F q079 gold@2  (13.8s)
+[20/27] F q080 gold@1  (14.3s)
+[21/27] F q081 gold@1  (15.0s)
+[22/27] F q082 gold@2  (15.2s)
+[23/27] F q083 gold@1  (14.2s)
+[24/27] F q084 gold@1  (14.4s)
+[25/27] F q085 gold@- refused (31.0s)
+[26/27] F q086 gold@- refused (31.1s)
+[27/27] F q087 gold@- refused (19.5s)
+{"setup": "F", "questions": 27, "recall@5": "23/24 = 96%", "recall@5_cross_lingual": "11/12 = 92%", "mrr@10": "0.862", "median_search_s": "17.6", "correct_refusals": "3/3 = 100%", "false_refusals": "1/24 = 4%", "answers_citing_gold": "23/23 = 100%", "citation_precision": "30/36 = 83%", "median_llm_s": "4.9"}
+
+Results: C:\Users\dadab\OneDrive\Рабочий стол\plant-safety-rag\eval\results\test2_v2

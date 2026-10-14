@@ -1,25 +1,33 @@
-"""SafetyAgent: one entry point that decides what to do with a request and uses the right tools.
+"""SafetyAgent: one entry point that understands a request, plans the search and uses the right tools.
 
-Tools (all grounded in the same evidence passages, all checked before anything is shown):
-    search_rules   hybrid search + reranker (retrieve.Retriever.search), setup E by default
-    answer         cited text answer or "not found" (generate.answer)
-    make_visual    structured visual: steps / checklist / compare / limits / intervals (visuals.make_visual)
-    plan_task      multi-step: task -> hazards -> one search per hazard -> cited checklist + TBM script
-    draft_notice   poster / leaflet content (notices.draft_notice); stored and edited in the web app
+Step 1, the planner (one light model call with structured output) reads the request and the last chat turns and
+returns:
+    tool       answer | task_plan | notice | chitchat
+    visual     none | steps | checklist | limits | intervals | compare  (added under the answer when it helps)
+    question   the request as a complete question (follow-ups resolved), in the user's language
+    query_ko / query_en   search queries in the documents' own words (헬멧 -> 안전모, 복장 -> 보호구), both languages
+    country    KR | US | both  (which documents to search)
 
-Routing: in "auto" mode one short model call (structured JSON, low thinking) picks the intent; the user can also
-choose a mode explicitly. The agent is deliberately a small, fixed state machine (at most ~4 steps per request,
-every step reported to the progress UI) rather than an open-ended loop: easier to explain, test and measure.
+Step 2, the tools (all grounded in the same evidence passages, all checked before anything is shown):
+    search_rules   hybrid search + reranker; setup F searches the user's words AND the planner's queries, filtered
+                   by country (retrieve.Retriever.search)
+    answer         cited answer to the user's own question, or "not found" (generate.answer)
+    make_visual    a chart / checklist / timeline / Korea-vs-US table when the planner says it helps
+    plan_task      job -> hazards -> one search per hazard -> cited plan + TBM script
+    draft_notice   poster / TBM sheet content (notices.draft_notice), edited and approved in the web app
+
+The agent is a small, fixed state machine (planner + at most ~3 tool steps, every step shown in the progress list)
+rather than an open-ended loop: easier to explain, test and measure.
 """
 from __future__ import annotations
 
 import logging
+import re
 import time
 from typing import TYPE_CHECKING, Any, Callable
 
 from plant_rag.checks import check_elements, merge_stats
-from plant_rag.generate import (LANG_NAME, NOT_FOUND, answer, call_llm_record, condense_question, detect_lang,
-                                light_cfg, make_search_query, parse_json)
+from plant_rag.generate import LANG_NAME, NOT_FOUND, answer, call_llm_record, detect_lang, light_cfg, parse_json
 from plant_rag.notices import draft_notice
 from plant_rag.visuals import VISUAL_TYPES, evidence_block, make_visual
 
@@ -28,46 +36,102 @@ if TYPE_CHECKING:
 
 log = logging.getLogger(__name__)
 
-INTENTS = ("answer", "visual", "compare", "task_plan", "notice", "chitchat")
-MODES = ("auto", *INTENTS[:-1])  # what the user can pick in the chat
+TOOLS = ("answer", "task_plan", "notice", "chitchat")
+COUNTRIES = ("KR", "US", "both")
 
-# ------------------------------------------------------------------ router
+# ------------------------------------------------------------------ planner
 
-ROUTER_SCHEMA = {
+PLANNER_SCHEMA = {
     "type": "object",
     "properties": {
-        "intent": {"type": "string", "enum": list(INTENTS)},
-        "visual_type": {"type": "string", "enum": [*VISUAL_TYPES, "auto"]},
+        "tool": {"type": "string", "enum": list(TOOLS)},
+        "visual": {"type": "string", "enum": [*VISUAL_TYPES, "none"]},
+        "question": {"type": "string"},
+        "question_translated": {"type": "string"},
+        "query_ko": {"type": "string"},
+        "query_en": {"type": "string"},
+        "country": {"type": "string", "enum": list(COUNTRIES)},
         "reason": {"type": "string"},
     },
-    "required": ["intent", "visual_type", "reason"],
+    "required": ["tool", "visual", "question", "question_translated", "query_ko", "query_en", "country", "reason"],
 }
 
-ROUTER_SYSTEM = """You route requests for SafetyAgent, a workplace-safety assistant that answers from Korean and US
-safety regulations and guides (KOSHA guides, Korean OSH Act and rules, OSHA standards). Choose ONE intent:
-- answer: a question about a safety rule, requirement, definition, number or procedure.
-- visual: the user asks to show or explain something as a chart, diagram, flow, table, checklist or visual.
-- compare: the user wants Korea and the US (KOSHA / Korean law vs OSHA), or two standards, compared.
-- task_plan: the user describes a job they (or a crew) will do and wants to know what to prepare or check:
-  permits, hazards, controls, PPE, a pre-work checklist or a TBM (tool box meeting) briefing.
-- notice: the user asks to make, create or draft a poster, flyer, notice, sign or leaflet to print, post or share.
-- chitchat: greetings, thanks, questions about the assistant itself, or requests unrelated to workplace safety.
-For visual, also pick visual_type: steps (procedure), checklist, limits (numeric thresholds), intervals (time
-periods), compare, or auto. Otherwise use auto. reason: a few English words."""
+PLANNER_SYSTEM = """You are the planner of SafetyAgent, a workplace-safety assistant for workers on construction and
+plant sites. It answers from Korean and US safety rules: the Korean OSH Act (산업안전보건법), the Safety and Health
+Standards Rule (산업안전보건기준에 관한 규칙), the risk assessment guideline, KOSHA guides, and OSHA standards
+(29 CFR 1910 / 1926). Read the conversation and the new message and return a JSON plan.
+
+tool:
+- answer: any question about a safety rule, requirement, number, procedure or comparison (the default).
+- task_plan: the user describes a specific job they or a crew will do and wants to know what to prepare or check
+  (permits, hazards, controls, PPE, pre-work checklist, TBM briefing).
+- notice: the user asks to make a poster, flyer, notice, sign or leaflet to print, post or share.
+- chitchat: greetings, thanks, questions about the assistant, or anything unrelated to workplace safety.
+
+visual (only for tool "answer"; otherwise "none"). Most questions need none. Add one only when the answer has
+several parts that are easier to see than to read:
+- steps: a procedure of 3 or more ordered steps;  checklist: several things to confirm, provide or wear;
+- limits: several numeric thresholds or a range (gas concentrations, several heights or distances);
+- intervals: several time periods or frequencies (initial, every year, within 1 month);
+- compare: the user compares Korea and the US (or two standards);
+- none: a single number, a single fact, a yes/no answer, who / which, or a definition. When the user asks for a
+  chart, table or visual, always pick the best-fitting type.
+
+question: the new message as one complete question in the user's language. Resolve follow-ups from the
+conversation ("그럼 미국은?" -> the full question about the US). Keep every name and number.
+
+question_translated: the same complete question in the other language (Korean <-> English), as a natural question,
+using the words the regulations use. Add nothing that the question does not say.
+
+query_ko and query_en: one search query each, in Korean and in English, that would find the rule text. Use the
+words the regulations use and fix misspellings (헬멧/핼멧 -> 안전모, hard hat -> head protection, 복장 -> 보호구 작업복,
+안전벨트 at height -> 안전대 / personal fall arrest). Drop words about the output (make, show, poster, chart,
+만들어 줘, 보여줘, 시각화). Keep regulation names and numbers the user wrote exactly (OSHA, 29 CFR 1910.146, 제32조,
+2 m), but never add article, section or CFR numbers the user did not write: a wrong number finds the wrong rule.
+
+country: KR if the user asks only about Korean rules, US if only about US / OSHA rules, otherwise both
+(including comparisons and questions that name no country).
+
+reason: a few English words."""
 
 
-def route_request(question: str, cfg: dict[str, Any]) -> dict[str, Any]:
-    """One cached, light model call. Falls back to "answer" if the output is unusable."""
-    rec = call_llm_record(f"Request: {question}", light_cfg(cfg, 512), ROUTER_SYSTEM, json_schema=ROUTER_SCHEMA)
+def plan_request(message: str, history: list[tuple[str, str]], cfg: dict[str, Any]) -> dict[str, Any]:
+    """One cached, light model call. Falls back to a plain answer plan if the output is unusable."""
+    turns = []
+    for q, a in history[-int(cfg.get("web", {}).get("history_turns", 3)):]:
+        a = re.sub(r"\s*\[\d+\]", "", a)[:500]  # citation marks mean nothing to the planner
+        turns.append(f"User: {q}\nAssistant: {a}")
+    convo = "\n\n".join(turns) if turns else "(none)"
+    rec = call_llm_record(f"Conversation:\n{convo}\n\nNew message: {message}", light_cfg(cfg, 1024), PLANNER_SYSTEM,
+                          json_schema=PLANNER_SCHEMA)
     try:
-        out = parse_json(rec["text"])
-        if out.get("intent") not in INTENTS:
-            raise ValueError(out)
-        return {"intent": out["intent"], "visual_type": out.get("visual_type", "auto"),
-                "reason": out.get("reason", ""), "llm_s": rec.get("seconds", 0.0), "cached": rec["cached"]}
+        p = parse_json(rec["text"])
+        if p.get("tool") not in TOOLS:
+            raise ValueError(p)
+        plan = {
+            "tool": p["tool"],
+            "visual": p.get("visual") if p.get("visual") in VISUAL_TYPES and p["tool"] == "answer" else "none",
+            "question": (p.get("question") or message).strip(),
+            "question_translated": (p.get("question_translated") or "").strip(),
+            "query_ko": (p.get("query_ko") or "").strip(),
+            "query_en": (p.get("query_en") or "").strip(),
+            "country": p.get("country") if p.get("country") in COUNTRIES else "both",
+            "reason": p.get("reason", ""),
+        }
     except (ValueError, KeyError) as exc:
-        log.warning("Router fallback to answer: %s", exc)
-        return {"intent": "answer", "visual_type": "auto", "reason": "router_fallback", "llm_s": 0.0, "cached": False}
+        log.warning("Planner fallback: %s", exc)
+        plan = {"tool": "answer", "visual": "none", "question": message, "question_translated": "", "query_ko": "", "query_en": "",
+                "country": "both", "reason": "planner_fallback"}
+    return plan | {"llm_s": rec.get("seconds", 0.0), "cached": rec["cached"]}
+
+
+def plan_search(retriever: Retriever, plan: dict[str, Any], setup: str, k: int,
+                on_stage: Callable[[str], None] | None = None, rerank_candidates: int | None = None) -> list[Hit]:
+    """Search with the user's question plus the planner's queries, limited to the planner's country."""
+    return retriever.search(plan["question"], setup=setup, k=k, on_stage=on_stage, rerank_candidates=rerank_candidates,
+                            alt_queries={"ko": plan.get("query_ko", ""), "en": plan.get("query_en", ""),
+                                         "question_translated": plan.get("question_translated", "")},
+                            country=None if plan.get("country") == "both" else plan.get("country"))
 
 
 # ------------------------------------------------------------------ task plan
@@ -77,7 +141,8 @@ DECOMPOSE_SCHEMA = {
     "properties": {
         "task_summary": {"type": "string"},
         "hazards": {"type": "array", "items": {"type": "object", "properties": {
-            "name": {"type": "string"}, "query": {"type": "string"}}, "required": ["name", "query"]}},
+            "name": {"type": "string"}, "query_ko": {"type": "string"}, "query_en": {"type": "string"}},
+            "required": ["name", "query_ko", "query_en"]}},
     },
     "required": ["task_summary", "hazards"],
 }
@@ -85,8 +150,9 @@ DECOMPOSE_SCHEMA = {
 DECOMPOSE_SYSTEM = """A worker describes a job. List the main workplace-safety hazard topics of this job that safety
 rules would cover (for example hot work / fire, confined space / oxygen and gas, work at height / falls,
 lockout of energy, forklifts and vehicles, heat, personal protective equipment, work permits).
-Return 1 to {max_hazards} hazards, most important first. For each: a short name in {lang_name} and one search query
-in {lang_name} that would find the rule text (e.g. "밀폐공간 작업 전 산소 및 유해가스 농도 측정").
+Return 1 to {max_hazards} hazards, most important first. For each: a short name in {lang_name}, and one search
+query in Korean and one in English that would find the rule text, in the words regulations use
+(e.g. "밀폐공간 작업 전 산소 및 유해가스 농도 측정" / "confined space atmospheric testing before entry").
 task_summary: the job in one short line, in {lang_name}."""
 
 _CITE = {"type": "array", "items": {"type": "integer"}}
@@ -123,7 +189,7 @@ PLAN_LISTS = ("permits", "before_start", "ppe", "tbm_script")
 
 
 def plan_task(task: str, retriever: Retriever, cfg: dict[str, Any], lang: str, setup: str,
-              stage: Callable[[str], None]) -> dict[str, Any]:
+              stage: Callable[[str], None], country: str = "both") -> dict[str, Any]:
     acfg = cfg.get("agent", {})
     max_h = int(acfg.get("plan_max_hazards", 3))
     t0 = time.perf_counter()
@@ -133,21 +199,23 @@ def plan_task(task: str, retriever: Retriever, cfg: dict[str, Any], lang: str, s
                           json_schema=DECOMPOSE_SCHEMA)
     try:
         dec = parse_json(rec["text"])
-        hazards = [h for h in dec.get("hazards", []) if h.get("query")][:max_h]
+        hazards = [h for h in dec.get("hazards", []) if h.get("query_ko") or h.get("query_en")][:max_h]
     except ValueError:
         dec, hazards = {"task_summary": task}, []
     if not hazards:
-        hazards = [{"name": task, "query": task}]
+        hazards = [{"name": task, "query_ko": "", "query_en": ""}]
 
     hits: list[Hit] = []
     per_hazard = int(acfg.get("plan_hits_per_hazard", 3))
     searched = []
     for h in hazards:
         stage("search")
-        found = retriever.search(h["query"], setup=setup, k=per_hazard,
-                                 rerank_candidates=int(acfg.get("plan_rerank_candidates", 6)))
+        own = h.get(f"query_{lang}") or task
+        found = plan_search(retriever, {"question": own, "query_ko": h.get("query_ko", ""),
+                                        "query_en": h.get("query_en", ""), "country": country},
+                            setup, per_hazard, rerank_candidates=int(acfg.get("plan_rerank_candidates", 6)))
         keep = [x for x in found if x.rerank_score is None or x.rerank_score >= float(acfg.get("plan_min_rerank", 0.05))]
-        searched.append({"hazard": h["name"], "query": h["query"], "found": len(keep)})
+        searched.append({"hazard": h["name"], "query": own, "found": len(keep)})
         for x in keep:
             if all(x.chunk["chunk_id"] != y.chunk["chunk_id"] for y in hits):
                 hits.append(x)
@@ -206,13 +274,13 @@ def balance_languages(hits: list[Hit], per_lang: int) -> list[Hit]:
 
 
 CHITCHAT = {
-    "en": ("I'm SafetyAgent. I answer workplace-safety questions from Korean and US safety rules and guides, "
-           "with the exact clause for every statement. I can also explain rules as a visual, compare Korea and "
-           "the US, plan the safety checks for a job, and draft a notice you can print. Try: "
-           "\"What oxygen level is safe in a confined space?\""),
-    "ko": ("저는 SafetyAgent입니다. 한국과 미국의 산업안전 규정·가이드를 근거로 질문에 답하고, 모든 내용에 근거 조항을 "
-           "표시합니다. 규정을 시각 자료로 설명하거나, 한국과 미국 기준을 비교하거나, 작업 전 안전 점검 계획을 세우고, "
-           "인쇄용 안전 게시물 초안도 만들 수 있습니다. 예: \"밀폐공간 작업 시 적정 산소농도는?\""),
+    "en": ("I'm SafetyAgent. Ask me about workplace-safety rules in Korean or English: I answer from Korean and US "
+           "safety rules with the exact clause, and add a chart or checklist when it helps. I can also plan the "
+           "safety checks for a job and draft a notice for your site. Try: \"What oxygen level is safe in a confined "
+           "space?\""),
+    "ko": ("저는 SafetyAgent입니다. 산업안전 규정에 대해 한국어나 영어로 물어보세요. 한국과 미국의 안전 규정을 근거로 "
+           "조항을 표시해 답하고, 필요하면 그래프나 체크리스트도 함께 보여 드립니다. 작업 전 안전 점검 계획이나 현장 "
+           "게시물 초안도 만들 수 있습니다. 예: \"밀폐공간 작업 시 적정 산소농도는?\""),
 }
 
 
@@ -221,57 +289,50 @@ CHITCHAT = {
 def run(question: str, history: list[tuple[str, str]], retriever: Retriever, cfg: dict[str, Any], setup: str,
         mode: str = "auto", lang: str | None = None,
         on_stage: Callable[[str], None] | None = None) -> dict[str, Any]:
-    """Handle one chat request. Returns JSON-ready data; the web app stores it as the message payload."""
+    """Handle one chat request. Returns JSON-ready data; the web app stores it as the message payload.
+    `mode` "auto" lets the planner choose the tool; "answer", "task_plan" or "notice" force it (admin console)."""
     stage = on_stage or (lambda s: None)
     lang = lang if lang in LANG_NAME else detect_lang(question)
     t0 = time.perf_counter()
-    route: dict[str, Any] = {"intent": mode, "visual_type": "auto", "reason": "user_choice", "llm_s": 0.0}
-    if mode == "auto":
-        stage("route")
-        route = route_request(question, cfg)
-    intent = route["intent"] if route["intent"] in INTENTS else "answer"
-    out: dict[str, Any] = {"kind": "answer", "intent": intent, "route": route, "lang": lang, "setup": setup,
-                           "question": question}
+    stage("route")
+    plan = plan_request(question, history, cfg)
+    if mode in TOOLS and mode != "chitchat":
+        plan["tool"] = mode
+    tool = plan["tool"]
+    out: dict[str, Any] = {"kind": "answer", "intent": tool, "plan": None, "route": plan, "lang": lang,
+                           "setup": setup, "question": question, "mode": mode,
+                           "standalone": plan["question"] if plan["question"] != question else None,
+                           "search_query": plan.get(f"query_{lang}") or None, "country": plan["country"]}
+    out.pop("plan")
 
-    if intent == "chitchat":
-        out |= {"kind": "chat", "text": CHITCHAT[lang], "refused": False, "cited": [], "evidence_hits": []}
+    if tool == "chitchat":
+        out |= {"kind": "chat", "text": CHITCHAT[lang], "refused": False, "cited": [], "evidence_hits": [],
+                "search_query": None, "country": None}
         out["total_s"] = round(time.perf_counter() - t0, 2)
         return out
 
-    standalone = question
-    if history:
-        stage("condense")
-        standalone = condense_question(question, history[-int(cfg.get("web", {}).get("history_turns", 3)):], cfg)
-    out["standalone"] = standalone if standalone != question else None
-
-    if intent == "task_plan":
-        res = plan_task(standalone, retriever, cfg, lang, setup, stage)
+    if tool == "task_plan":
+        res = plan_task(plan["question"], retriever, cfg, lang, setup, stage, plan["country"])
         hits = res["hits"]
         out |= {"kind": "plan", "plan": res["plan"], "plan_check": res.get("check", {}),
                 "hazards_searched": res["hazards_searched"], "evidence_hits": hits,
-                "refused": res["plan"] is None, "reason": res["reason"],
+                "refused": res["plan"] is None, "reason": res["reason"], "search_query": None,
                 "cited": sorted({c for x in _plan_items(res["plan"]) for c in x["cite"]}) if res["plan"] else []}
         out["text"] = plan_as_text(res["plan"]) if res["plan"] else NOT_FOUND[lang]
         out["total_s"] = round(time.perf_counter() - t0, 2)
         return out
 
     k = int(cfg["retrieval"]["final_k"])
-    query = standalone
-    if intent in ("notice", "visual", "compare"):  # "make / show ..." requests: search for the rule, not the request
-        stage("query")
-        query = make_search_query(standalone, cfg)
-        out["search_query"] = query
-    if intent == "compare":
-        per_lang = int(cfg.get("agent", {}).get("compare_per_language", 3))
-        hits = balance_languages(retriever.search(query, setup=setup, k=2 * k, on_stage=stage), per_lang)
-    else:
-        hits = retriever.search(query, setup=setup, k=k, on_stage=stage)
+    compare = plan["visual"] == "compare" and plan["country"] == "both"
+    hits = plan_search(retriever, plan, setup, 2 * k if compare else k, on_stage=stage)
+    if compare:
+        hits = balance_languages(hits, int(cfg.get("agent", {}).get("compare_per_language", 3)))
     out["timings"] = dict(retriever.timings)
-    out["translated"] = getattr(retriever, "last_translation", None) if cfg["retrieval"]["setups"][setup].get("translate") else None
+    out["translated"] = getattr(retriever, "last_translation", None)
 
-    if intent == "notice":
+    if tool == "notice":
         stage("notice")
-        res = draft_notice(standalone, hits, cfg, lang)
+        res = draft_notice(plan["question"], hits, cfg, lang)
         out |= {"kind": "notice", "notice_content": res["content"], "notice_check": res["check"],
                 "evidence_hits": hits, "refused": res["content"] is None, "reason": res["reason"],
                 "cited": sorted({c for key in ("key_rules", "dos", "donts", "key_numbers")
@@ -281,13 +342,12 @@ def run(question: str, history: list[tuple[str, str]], retriever: Retriever, cfg
         return out
 
     stage("answer")
-    ans = answer(standalone, hits, cfg, setup, lang=lang)
+    ans = answer(plan["question"], hits, cfg, setup, lang=lang)
     out |= {"text": ans.text, "refused": ans.refused, "reason": ans.refusal_reason, "cited": ans.cited,
             "evidence_hits": hits, "llm_s": round(ans.llm_seconds, 2), "llm_cached": ans.llm_cached}
-    if intent in ("visual", "compare") and not ans.refused:
+    if plan["visual"] in VISUAL_TYPES and not ans.refused:
         stage("visual")
-        preferred = "compare" if intent == "compare" else route.get("visual_type")
-        vis = make_visual(standalone, hits, cfg, lang, preferred, answer_text=ans.text)
+        vis = make_visual(plan["question"], hits, cfg, lang, plan["visual"], answer_text=ans.text)
         out |= {"visual": vis["visual"], "visual_check": vis["check"], "visual_reason": vis["reason"]}
         if vis["visual"]:  # the visual's citations count as cited passages too
             out["cited"] = sorted(set(ans.cited) | _visual_cites(vis["visual"]))

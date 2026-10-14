@@ -17,7 +17,7 @@ import pymupdf
 
 from plant_rag import agent
 from plant_rag.config import load_config, resolve_path
-from plant_rag.generate import detect_lang, make_search_query, refusal_threshold
+from plant_rag.generate import detect_lang, refusal_threshold
 from plant_rag.ingest import read_manifest
 from plant_rag.notices import draft_notice, translate_notice
 from plant_rag.retrieve import Hit, Retriever
@@ -31,6 +31,7 @@ SETUP_INFO = {
     "C": "Hybrid: BM25 + dense (RRF)",
     "D": "Hybrid + reranker",
     "E": "Hybrid + reranker + query translation",
+    "F": "E + agent search plan (documents' words, KO + EN, country filter)",
 }
 
 
@@ -129,7 +130,7 @@ class Engine:
                                answer_text=payload.get("text"))
 
     def notice_from(self, topic: str, lang: str, evidence: list[dict[str, Any]] | None = None,
-                    setup: str = "E", on_stage: Callable[[str], None] | None = None) -> dict[str, Any]:
+                    setup: str = "F", on_stage: Callable[[str], None] | None = None) -> dict[str, Any]:
         """Draft notice content from stored evidence, or search for the topic first."""
         retriever = self._require_ready()
         stage = on_stage or (lambda s: None)
@@ -137,8 +138,9 @@ class Engine:
             if evidence:
                 hits = self._hits_from(evidence)
             else:
-                stage("query")
-                hits = retriever.search(make_search_query(topic, self.cfg), setup=setup, on_stage=stage)
+                stage("route")
+                plan = agent.plan_request(topic, [], self.cfg)
+                hits = agent.plan_search(retriever, plan, setup, int(self.cfg["retrieval"]["final_k"]), on_stage=stage)
             stage("notice")
             res = draft_notice(topic, hits, self.cfg, lang)
         res.pop("raw", None)

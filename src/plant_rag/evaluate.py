@@ -54,7 +54,13 @@ def settings_fingerprint(cfg: dict[str, Any], setup: str) -> str:
 
 def evaluate_one(q: dict, setup: str, retriever: Retriever, cfg: dict[str, Any], with_answer: bool, k_eval: int) -> dict:
     t0 = time.perf_counter()
-    hits = retriever.search(q["question"], setup=setup, k=k_eval)
+    plan = None
+    if cfg["retrieval"]["setups"][setup].get("planner"):  # same path as the web app: planner -> planned search
+        from plant_rag import agent
+        plan = agent.plan_request(q["question"], [], cfg)
+        hits = agent.plan_search(retriever, plan, setup, k_eval)
+    else:
+        hits = retriever.search(q["question"], setup=setup, k=k_eval)
     search_s = time.perf_counter() - t0
     gold = set(q["gold_chunk_ids"])
     ids = [h.chunk["chunk_id"] for h in hits]
@@ -66,9 +72,11 @@ def evaluate_one(q: dict, setup: str, retriever: Retriever, cfg: dict[str, Any],
         "top_rerank": round(hits[0].rerank_score, 4) if hits and hits[0].rerank_score is not None else None,
         "first_gold_rank": first_gold, "search_s": round(search_s, 2),
     }
+    if plan:
+        row["plan"] = {k: plan[k] for k in ("tool", "visual", "question_translated", "query_ko", "query_en", "country")}
     if with_answer:
         final_k = int(cfg["retrieval"]["final_k"])
-        ans = answer(q["question"], hits[:final_k], cfg, setup)
+        ans = answer(plan["question"] if plan else q["question"], hits[:final_k], cfg, setup)
         cited_ids = [hits[n - 1].chunk["chunk_id"] for n in ans.cited]
         row |= {
             "answer": ans.text, "refused": ans.refused, "refusal_reason": ans.refusal_reason,
