@@ -1,12 +1,12 @@
-"""Deterministic checks for model output that will be shown, printed or posted: citations and numbers.
+"""Deterministic checks for model output that will be shown: citations and numbers.
 
-Used by visuals, task plans and notices. Nothing here calls a model, so the checks are cheap, repeatable and
+Used by visuals. Nothing here calls a model, so the checks are cheap, repeatable and
 easy to explain:
 
 - Citation check: every element must cite at least one evidence passage, and only passages that exist.
 - Numbers guard: every number in an element must appear in the text of a passage that element cites
-  (after normalising "1,000" -> "1000" and full-width digits). A safety notice that says "19.5%" when the cited
-  clause says "18%" is dropped instead of printed.
+  (after normalising "1,000" -> "1000" and full-width digits). A visual element that says "19.5%" when the cited
+  clause says "18%" is dropped instead of shown.
 
 Both return the element list split into kept and dropped, with a reason per dropped element, so the caller
 can report how much was removed (that rate is an evaluation metric).

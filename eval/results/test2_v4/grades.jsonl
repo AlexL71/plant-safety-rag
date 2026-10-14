@@ -1,0 +1,24 @@
+{"qid": "q061", "setup": "F", "faithfulness": 2, "correctness": 2, "note": "", "grader": "Claude Opus 5.5 (main session), rubric eval/faithfulness_rubric.md, read every cited passage; not human"}
+{"qid": "q062", "setup": "F", "faithfulness": 2, "correctness": 2, "note": "", "grader": "Claude Opus 5.5 (main session), rubric eval/faithfulness_rubric.md, read every cited passage; not human"}
+{"qid": "q063", "setup": "F", "faithfulness": 2, "correctness": 2, "note": "", "grader": "Claude Opus 5.5 (main session), rubric eval/faithfulness_rubric.md, read every cited passage; not human"}
+{"qid": "q064", "setup": "F", "faithfulness": 2, "correctness": 2, "note": "", "grader": "Claude Opus 5.5 (main session), rubric eval/faithfulness_rubric.md, read every cited passage; not human"}
+{"qid": "q065", "setup": "F", "faithfulness": 2, "correctness": 2, "note": "", "grader": "Claude Opus 5.5 (main session), rubric eval/faithfulness_rubric.md, read every cited passage; not human"}
+{"qid": "q066", "setup": "F", "faithfulness": 2, "correctness": 2, "note": "", "grader": "Claude Opus 5.5 (main session), rubric eval/faithfulness_rubric.md, read every cited passage; not human"}
+{"qid": "q067", "setup": "F", "faithfulness": 2, "correctness": 2, "note": "", "grader": "Claude Opus 5.5 (main session), rubric eval/faithfulness_rubric.md, read every cited passage; not human"}
+{"qid": "q068", "setup": "F", "faithfulness": 2, "correctness": 2, "note": "", "grader": "Claude Opus 5.5 (main session), rubric eval/faithfulness_rubric.md, read every cited passage; not human"}
+{"qid": "q069", "setup": "F", "faithfulness": 2, "correctness": 2, "note": "", "grader": "Claude Opus 5.5 (main session), rubric eval/faithfulness_rubric.md, read every cited passage; not human"}
+{"qid": "q070", "setup": "F", "faithfulness": 2, "correctness": 2, "note": "", "grader": "Claude Opus 5.5 (main session), rubric eval/faithfulness_rubric.md, read every cited passage; not human"}
+{"qid": "q071", "setup": "F", "faithfulness": 2, "correctness": 2, "note": "", "grader": "Claude Opus 5.5 (main session), rubric eval/faithfulness_rubric.md, read every cited passage; not human"}
+{"qid": "q072", "setup": "F", "faithfulness": 2, "correctness": 2, "note": "", "grader": "Claude Opus 5.5 (main session), rubric eval/faithfulness_rubric.md, read every cited passage; not human"}
+{"qid": "q073", "setup": "F", "faithfulness": 2, "correctness": 2, "note": "", "grader": "Claude Opus 5.5 (main session), rubric eval/faithfulness_rubric.md, read every cited passage; not human"}
+{"qid": "q074", "setup": "F", "faithfulness": 2, "correctness": 2, "note": "", "grader": "Claude Opus 5.5 (main session), rubric eval/faithfulness_rubric.md, read every cited passage; not human"}
+{"qid": "q075", "setup": "F", "faithfulness": 2, "correctness": 2, "note": "", "grader": "Claude Opus 5.5 (main session), rubric eval/faithfulness_rubric.md, read every cited passage; not human"}
+{"qid": "q076", "setup": "F", "faithfulness": 2, "correctness": 2, "note": "", "grader": "Claude Opus 5.5 (main session), rubric eval/faithfulness_rubric.md, read every cited passage; not human"}
+{"qid": "q077", "setup": "F", "faithfulness": 2, "correctness": 2, "note": "", "grader": "Claude Opus 5.5 (main session), rubric eval/faithfulness_rubric.md, read every cited passage; not human"}
+{"qid": "q078", "setup": "F", "faithfulness": 2, "correctness": 2, "note": "Stop work, evacuate, report to the supervisor; does not mention the supervisor's duty or the no-dismissal clause (not asked).", "grader": "Claude Opus 5.5 (main session), rubric eval/faithfulness_rubric.md, read every cited passage; not human"}
+{"qid": "q079", "setup": "F", "faithfulness": 2, "correctness": 2, "note": "", "grader": "Claude Opus 5.5 (main session), rubric eval/faithfulness_rubric.md, read every cited passage; not human"}
+{"qid": "q080", "setup": "F", "faithfulness": 2, "correctness": 2, "note": "", "grader": "Claude Opus 5.5 (main session), rubric eval/faithfulness_rubric.md, read every cited passage; not human"}
+{"qid": "q081", "setup": "F", "faithfulness": 2, "correctness": 2, "note": "", "grader": "Claude Opus 5.5 (main session), rubric eval/faithfulness_rubric.md, read every cited passage; not human"}
+{"qid": "q082", "setup": "F", "faithfulness": 2, "correctness": 2, "note": "", "grader": "Claude Opus 5.5 (main session), rubric eval/faithfulness_rubric.md, read every cited passage; not human"}
+{"qid": "q083", "setup": "F", "faithfulness": 2, "correctness": 2, "note": "", "grader": "Claude Opus 5.5 (main session), rubric eval/faithfulness_rubric.md, read every cited passage; not human"}
+{"qid": "q084", "setup": "F", "faithfulness": 1, "correctness": 2, "note": "Lists the six overturn causes of KOSHA-G-10 7.8(3); renders '화물이 적거나' as 'poorly secured loads', which the passage does not say.", "grader": "Claude Opus 5.5 (main session), rubric eval/faithfulness_rubric.md, read every cited passage; not human"}

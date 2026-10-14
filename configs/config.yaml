@@ -93,27 +93,14 @@ web:                                  # SafetyAgent web app (python -m app.serve
   max_question_chars: 1000
   history_turns: 3                    # earlier exchanges used to rewrite a follow-up question
   admin_session_hours: 8
-  public_base_url: http://127.0.0.1:8000   # used in QR codes on printed notices; set to the LAN/server address for phones
-  max_notices_per_user: 50
-  modes: [auto, answer, task_plan, notice]   # users always use auto; admins can force a tool in the test console
 
-agent:                                # SafetyAgent tools (src/plant_rag/agent.py)
-  plan_max_hazards: 3                 # task plan: hazards searched separately (each costs one rerank)
-  plan_hits_per_hazard: 3
-  plan_rerank_candidates: 6           # fewer than normal questions: 3 hazards x 6 pairs ~ one normal question
-  plan_min_rerank: 0.05               # drop weak passages for a hazard
-  plan_max_evidence: 9
-  plan_max_output_tokens: 6144
+agent:                                # SafetyAgent (src/plant_rag/agent.py)
   compare_per_language: 3             # Korea vs US: best 3 Korean + best 3 English passages
 
 visuals:
   max_output_tokens: 4096
   thinking_level: null                # null = llm default
   min_elements: 2                     # fewer checked elements -> no visual (the text answer stays)
-
-notices:
-  max_output_tokens: 4096
-  thinking_level: null
 
 api_key:
   env_var: GEMINI_API_KEY             # takes priority if set

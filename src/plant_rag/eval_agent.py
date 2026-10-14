@@ -1,20 +1,18 @@
-"""Evaluate the agent layer: the planner, visuals, job plans and notices.
+"""Evaluate the agent layer: the planner and the visuals.
 
-    python -m plant_rag.eval_agent --part router --run agent_v3        # 52 requests, one light model call each
-    python -m plant_rag.eval_agent --part tasks --run agent_v3         # 12 visuals + 6 plans + 6 notices (searches)
-    python -m plant_rag.eval_agent --part all --run agent_v3
+    python -m plant_rag.eval_agent --part router --run agent_v4        # 52 requests, one light model call each
+    python -m plant_rag.eval_agent --part tasks --run agent_v4         # 12 visual requests end to end (searches)
+    python -m plant_rag.eval_agent --part all --run agent_v4
 
 Inputs: eval/agent/router_cases.jsonl (request, optional chat history, and the expected tool; optionally the expected
 visual ("any" = any type), country, and terms of which at least one must appear in the planner's search queries)
 and eval/agent/task_cases.jsonl.
-Outputs in eval/results/<run>/: router.jsonl, tasks.jsonl (one row per case, with the produced visual / plan /
-notice, its evidence ids and the automatic check statistics), and summary.json.
+Outputs in eval/results/<run>/: router.jsonl, tasks.jsonl (one row per case, with the answer, the produced visual,
+its evidence ids and the automatic check statistics), and summary.json.
 
 Automatic metrics (no human needed):
 - planner: tool accuracy with a confusion table, and visual / country / search-term accuracy where a case sets them.
 - visuals: produced %, requested type produced %, elements kept after the citation check + numbers guard.
-- plans: produced %, expected hazard groups covered (keyword match in hazard names and controls), items kept.
-- notices: produced %, lines kept, translation numbers preserved (line checks).
 Faithfulness of what is shown (does each element match its cited passage?) is graded separately with
 eval/faithfulness_rubric.md and stored next to these files.
 Rows already in the output files are skipped, so an interrupted run resumes.
@@ -32,7 +30,6 @@ from typing import Any
 
 from plant_rag import agent
 from plant_rag.config import REPO_ROOT, load_config
-from plant_rag.notices import translate_notice
 from plant_rag.retrieve import Retriever
 
 log = logging.getLogger(__name__)
@@ -81,14 +78,6 @@ def _grade_plan(case: dict, plan: dict) -> dict[str, bool]:
     return g | {"correct": all(g.values())}
 
 
-def _hazard_coverage(plan: dict | None, groups: list[list[str]]) -> tuple[int, int]:
-    if not plan:
-        return 0, len(groups)
-    text = " ".join([h["hazard"] + " " + " ".join(c["text"] for c in h["controls"]) for h in plan.get("hazards", [])]
-                    + [x["text"] for k in agent.PLAN_LISTS for x in plan.get(k, [])]).lower()
-    return sum(1 for g in groups if any(w.lower() in text for w in g)), len(groups)
-
-
 def run_tasks(cfg: dict[str, Any], out: Path, setup: str) -> list[dict]:
     cases = read_jsonl(REPO_ROOT / "eval/agent/task_cases.jsonl")
     done = {r["id"]: r for r in read_jsonl(out)}
@@ -101,26 +90,14 @@ def run_tasks(cfg: dict[str, Any], out: Path, setup: str) -> list[dict]:
                 continue
             retriever = retriever or Retriever(cfg)
             t0 = time.perf_counter()
-            res = agent.run(c["text"], [], retriever, cfg, setup, mode=c["mode"], lang=c["lang"])
+            res = agent.run(c["text"], [], retriever, cfg, setup, lang=c["lang"])
             hits = res.pop("evidence_hits", [])
             row = {**c, "intent": res["intent"], "plan_route": res.get("route"), "refused": res.get("refused"), "reason": res.get("reason"),
                    "evidence": [h.chunk["chunk_id"] for h in hits], "seconds": round(time.perf_counter() - t0, 1)}
-            if c["part"] == "visual":
-                v = res.get("visual")
-                row |= {"answer": res.get("text"), "visual": v, "visual_check": res.get("visual_check", {}),
-                        "visual_reason": res.get("visual_reason", ""), "produced": bool(v),
-                        "type_ok": bool(v) and v["type"] == c["expect_type"]}
-            elif c["part"] == "plan":
-                plan = res.get("plan")
-                cov, total = _hazard_coverage(plan, c["expect_hazards"])
-                row |= {"plan": plan, "plan_check": res.get("plan_check", {}), "produced": bool(plan),
-                        "hazards_searched": res.get("hazards_searched", []), "coverage": [cov, total]}
-            else:
-                content = res.get("notice_content")
-                row |= {"notice": content, "notice_check": res.get("notice_check", {}), "produced": bool(content)}
-                if content and c.get("lang2"):
-                    tr = translate_notice(content, c["lang2"], cfg)
-                    row |= {"translation": tr["translation"], "line_checks": tr["line_checks"], "translation_ok": tr["ok"]}
+            v = res.get("visual")
+            row |= {"answer": res.get("text"), "visual": v, "visual_check": res.get("visual_check", {}),
+                    "visual_reason": res.get("visual_reason", ""), "produced": bool(v),
+                    "type_ok": bool(v) and v["type"] == c["expect_type"]}
             f.write(json.dumps(row, ensure_ascii=False) + "\n")
             f.flush()
             rows.append(row)
@@ -162,30 +139,16 @@ def summarize(router: list[dict], tasks: list[dict]) -> dict[str, Any]:
                         "requested_type": f"{sum(r['type_ok'] for r in vis)}/{len(vis)}",
                         "elements": checks(vis, "visual_check"),
                         "not_produced": {r["id"]: r.get("visual_reason") or r.get("reason") for r in vis if not r["produced"]}}
-    plans = [r for r in tasks if r["part"] == "plan"]
-    if plans:
-        s["plans"] = {"produced": f"{sum(r['produced'] for r in plans)}/{len(plans)}",
-                      "hazard_groups_covered": f"{sum(r['coverage'][0] for r in plans)}/{sum(r['coverage'][1] for r in plans)}",
-                      "items": checks(plans, "plan_check")}
-    notes = [r for r in tasks if r["part"] == "notice"]
-    if notes:
-        lc = [c for r in notes for c in r.get("line_checks", [])]
-        s["notices"] = {"produced": f"{sum(r['produced'] for r in notes)}/{len(notes)}",
-                        "lines": checks(notes, "notice_check"),
-                        "translations_all_numbers_kept": f"{sum(1 for r in notes if r.get('translation_ok'))}/"
-                                                         f"{sum(1 for r in notes if 'translation_ok' in r)}",
-                        "translated_lines_numbers_kept": f"{sum(c['ok'] for c in lc)}/{len(lc)}"}
     secs = [r["seconds"] for r in tasks]
     if secs:
-        s["median_seconds"] = {p: sorted(r["seconds"] for r in tasks if r["part"] == p)[len([r for r in tasks if r["part"] == p]) // 2]
-                               for p in ("visual", "plan", "notice") if any(r["part"] == p for r in tasks)}
+        s["median_seconds"] = sorted(secs)[len(secs) // 2]
     return s
 
 
 def main() -> None:
     if hasattr(sys.stdout, "reconfigure"):
         sys.stdout.reconfigure(encoding="utf-8", errors="replace")
-    ap = argparse.ArgumentParser(description="Evaluate SafetyAgent's router, visuals, plans and notices.")
+    ap = argparse.ArgumentParser(description="Evaluate SafetyAgent's planner and visuals.")
     ap.add_argument("--config", default="configs/config.yaml")
     ap.add_argument("--part", choices=["router", "tasks", "all"], default="all")
     ap.add_argument("--run", required=True)

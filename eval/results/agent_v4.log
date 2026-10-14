@@ -1,0 +1,103 @@
+r01    answer -> answer    none      both ok | 안전대 착용 높이 기준 | personal fall arrest system safety harness required height
+r02    answer -> answer    checklist both ok | 밀폐공간 출입 허가서 기재사항 내용 | confined space entry permit required contents items
+r03    answer -> answer    none      both ok | 지게차 운전자 교육 실시 자격 강사 | forklift operator training qualified trainer person OSHA
+r04    answer -> answer    none      both ok | 물체 낙하 비래 안전모 착용 의무 | head protection falling objects required
+r05    answer -> answer    intervals both ok | 위험성평가 실시 시기 정기평가 수시평가 주기 | risk assessment review frequency regular periodic reassessment
+r06    answer -> answer    none      US   ok | OSHA 1910.147 록아웃 정의 lockout | OSHA 1910.147 lockout definition
+r07    answer -> answer    steps     both ok | 밀폐공간 작업 절차 순서 | permit-required confined space entry procedure steps
+r08    answer -> answer    steps     both ok | 정비등의 작업시의 운전정지 록아웃 태그아웃 절차 | lockout tagout procedure steps
+r09    answer -> answer    checklist both ok | 용접 작업 화재예방 안전조치 점검사항 | welding hot work fire prevention checklist safety precautions
+r10    answer -> answer    limits    both ok | 밀폐공간 적정공기 가스 농도 기준 산소 황화수소 일산화탄소 가연성가스 | confined space acceptable environmental conditions atmospheric limits oxygen toxic flammable gas
+r11    answer -> answer    intervals both ok | 잠금장치 LOTO 절차 점검 주기 기록 보존 | lockout tagout procedure periodic inspection record retention retention period
+r12    answer -> answer    limits    both ok | 추락방호망 설치 기준 | safety net installation requirements
+r13    answer -> answer    compare   both ok | 밀폐공간 적정공기 산소 농도 기준 | confined space oxygen concentration limits OSHA
+r14    answer -> answer    compare   both ok | 용접 화재감시자 배치 기준 시간 | welding fire watch requirements post-welding
+r15    answer -> answer    compare   both ok | OSHA KOSHA 잠금 표지 LOTO 정기점검 주기 비교 | OSHA KOSHA lockout tagout periodic inspection frequency requirement comparison
+r16    answer -> answer    compare   both ok | 추락 방지 기준 높이 안전난간 작업발판 | fall protection trigger height OSHA general industry construction
+r17    answer -> answer    compare   both ok | 지게차 운전자 자격 교육 평가 기준 | forklift powered industrial truck operator evaluation certification training requirements OSHA
+r18    answer -> answer    compare   both ok | 보호구 지급 선정 위험성평가 주체 사업주 | hazard assessment PPE selection employer requirements OSHA 1910.132
+r19    answer -> answer    checklist both ok | 밀폐공간 탱크 내부 용접 작업 안전조치 및 준비사항 화기작업 | confined space welding hot work inside tank safety precautions checklist
+r20    answer -> answer    checklist both ok | 펌프 모터 교체 정비 잔류 압력 방출 록아웃 태그아웃 점검 | pump motor replacement stored pressure isolation lockout tagout verification
+r21    answer -> answer    checklist both ok | 지붕 배관 보수 작업 3m 추락 방지 안전대 안전조치 TBM 점검 | roof piping maintenance repair 3m fall protection safety checklist toolbox talk
+r22    answer -> answer    checklist both ok | 하수관 맨홀 청소 밀폐공간 작업 시작 전 점검 안전조치 | sewer manhole cleaning confined space pre-entry checklist safety requirements
+r23    answer -> answer    checklist both ok | 여름철 폭염 옥외작업 안전보건 조치 점검사항 온열질환 예방 | outdoor work heat illness prevention measures checklist OSHA
+r24    answer -> answer    checklist both ok | 지게차 화학물질 드럼 하역 작업 안전 점검 수칙 | forklift unloading chemical drums warehouse safety checklist requirements
+r25    answer -> answer    checklist both ok | 지게차 안전조치 준수사항 작업계획서 | forklift powered industrial trucks safety rules precautions checklist
+r26    answer -> answer    checklist both ok | 밀폐공간 작업 프로그램 출입 안전 절차 | confined space entry permit procedures maintenance safety requirements
+r27    answer -> answer    checklist both ok | 외국인 근로자 보호구 지급 및 착용 기준 안내 | personal protective equipment requirements PPE foreign workers guidelines
+r28    answer -> answer    checklist both ok | 용접 화재 예방 조치 소화기 불티 비산 방지 화기작업 | welding hot work fire prevention fire watch precautions
+r29    answer -> answer    checklist both ok | 추락 예방 수칙 안전난간 개구부 안전대 | fall protection requirements guardrails safety harness opening
+r30    answer -> answer    checklist both ok | 폭염 온열질환 예방 수칙 물 그늘 휴식 | heat illness prevention guidelines water rest shade workplace
+r31  chitchat -> chitchat  none      both ok | 안녕하세요 | Hello
+r32  chitchat -> chitchat  none      both ok |  | 
+r33  chitchat -> chitchat  none      both ok |  | 
+r34  chitchat -> chitchat  none      both ok |  | 
+r35  chitchat -> chitchat  none      both ok | 점심 메뉴 추천 | lunch menu recommendation
+r36  chitchat -> chitchat  none      both ok |  | 
+r37    answer -> answer    limits    both ok | 밀폐공간 산소 결핍 적정 공기 산소 농도 기준 | confined space oxygen concentration limits OSHA standard
+r38    answer -> answer    limits    both ok | 추락 방지 기준 높이 안전난간 추락위험 방지 | fall protection trigger height requirement standard
+r39    answer -> answer    checklist both ok | 지게차 하역 작업 전 점검 TBM 안전수칙 작업계획서 | forklift loading unloading pre-operation safety checklist toolbox talk
+r40    answer -> answer    compare   both ok | 지게차 운전원 평가 재교육 주기 | powered industrial truck forklift operator evaluation frequency triennial refresher
+r41  chitchat -> chitchat  none      both ok | 오늘 날씨 | weather today
+r42    answer -> answer    checklist both ok | 보호구 착용 지급 안전모 안전화 안전대 | personal protective equipment requirements PPE selection wear
+q01    answer -> answer    limits    US   ok | OSHA 밀폐공간 산소 농도 기준 | OSHA confined space acceptable oxygen concentration limits
+q02    answer -> answer    none      KR   ok | 용접 화재감시인 배치 시간 종료 후 | fire watch duration after hot work welding Korean regulations
+q03    answer -> answer    checklist both ok | 용접 용단 불티 비산 방지 화재 예방 기준 | welding spark prevention fire watch hot work regulations
+q04    answer -> answer    checklist both ok | 호흡용 보호구 방진마스크 방독마스크 송기마스크 착용 기준 | respiratory protection respirator use requirements standards
+q05    answer -> answer    limits    KR   ok | 산업안전보건기준에 관한 규칙 안전난간 설치 기준 구조 | Korea Safety and Health Standards Rule guardrail requirements standards
+q06    answer -> answer    none      US   ok | 29 CFR 1926 추락 방지 높이 기준 | 29 CFR 1926 fall protection height threshold
+q07    answer -> answer    checklist both ok | 작업발판 설치 기준 폭 틈 구조 | scaffold work platform planking requirements
+q08    answer -> answer    steps     both ok | 잠금장치 꼬리표 LOTO 작업 절차 단계 | lockout tagout LOTO sequence steps procedure
+q09    answer -> answer    checklist both ok | 높이 2m 이상 안전대 착용 안전 기준 게시물 | fall protection personal fall arrest system 2 meters height site notice rules
+q10    answer -> answer    compare   both ok | 비계 안전난간 설치 높이 기준 | scaffold guardrail height requirement OSHA
+Loading weights:   0%|          | 0/393 [00:00<?, ?it/s]Loading weights:   3%|▎         | 10/393 [00:00<00:04, 89.85it/s]Loading weights:   5%|▌         | 21/393 [00:00<00:03, 96.62it/s]Loading weights:   8%|▊         | 31/393 [00:00<00:04, 74.96it/s]Loading weights:  11%|█         | 42/393 [00:00<00:04, 86.06it/s]Loading weights:  13%|█▎        | 52/393 [00:00<00:04, 73.79it/s]Loading weights:  16%|█▌        | 63/393 [00:00<00:03, 83.13it/s]Loading weights:  19%|█▉        | 75/393 [00:00<00:03, 93.29it/s]Loading weights:  22%|██▏       | 85/393 [00:01<00:03, 86.33it/s]Loading weights:  24%|██▍       | 95/393 [00:01<00:03, 77.95it/s]Loading weights:  26%|██▋       | 104/393 [00:01<00:03, 75.22it/s]Loading weights:  29%|██▉       | 114/393 [00:01<00:03, 75.13it/s]Loading weights:  31%|███       | 122/393 [00:01<00:04, 61.74it/s]Loading weights:  34%|███▍      | 133/393 [00:01<00:03, 70.26it/s]Loading weights:  37%|███▋      | 144/393 [00:01<00:03, 77.11it/s]Loading weights:  48%|████▊     | 190/393 [00:01<00:01, 171.11it/s]Loading weights: 100%|██████████| 393/393 [00:01<00:00, 199.29it/s]
+v01 visual produced=True (85.1s)
+v02 visual produced=True (29.1s)
+v03 visual produced=True (49.4s)
+v04 visual produced=True (42.0s)
+v05 visual produced=True (43.5s)
+v06 visual produced=True (14.1s)
+v07 visual produced=True (30.6s)
+v08 visual produced=True (34.1s)
+v09 visual produced=True (14.2s)
+v10 visual produced=True (17.0s)
+v11 visual produced=False (14.6s)
+v12 visual produced=True (25.6s)
+{
+  "router": {
+    "all_checks": "52/52",
+    "tool": "52/52",
+    "visual": "16/16",
+    "country": "13/13",
+    "search_terms": "9/9",
+    "planner_cases_all_checks": "10/10",
+    "by_language": {
+      "ko": "26/26",
+      "en": "26/26"
+    },
+    "visual_added_to_plain_questions": "23/29",
+    "confusion": {
+      "answer": {
+        "answer": 45
+      },
+      "chitchat": {
+        "chitchat": 7
+      }
+    },
+    "wrong": []
+  },
+  "visuals": {
+    "produced": "11/12",
+    "requested_type": "11/12",
+    "elements": {
+      "elements": 58,
+      "kept": 55,
+      "dropped": 3,
+      "number_not_in_source": 3
+    },
+    "not_produced": {
+      "v11": "low_score"
+    }
+  },
+  "median_seconds": 30.6
+}

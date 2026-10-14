@@ -124,7 +124,7 @@ h1, h2, h3 { line-height: 1.2; letter-spacing: -.02em; margin: 0; }
 .logo-sm { height: 38px; }
 .icon-logo { width: 30px; height: 30px; display: block; }
 
-/* ---------- visual explanations & task plans (js/visuals.js) ---------- */
+/* ---------- visual explanations (js/visuals.js) ---------- */
 .vis { margin-top: 14px; border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface); padding: 16px 18px; }
 .vis-head { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; }
 .vis-ico { width: 36px; height: 36px; border-radius: 10px; background: var(--brand-50); color: var(--brand); display: grid;
@@ -176,13 +176,3 @@ h1, h2, h3 { line-height: 1.2; letter-spacing: -.02em; margin: 0; }
 .iv-bar { position: relative; height: 26px; background: var(--line-2); border-radius: 8px; overflow: hidden; }
 .iv-bar .fill { position: absolute; inset: 0 auto 0 0; background: linear-gradient(90deg, var(--brand-100), var(--accent-50)); border-right: 3px solid var(--brand); }
 .iv-val { position: absolute; left: 10px; top: 50%; transform: translateY(-50%); font-size: 12.5px; font-weight: 700; color: var(--brand-700); }
-.plan .plan-ico { background: var(--safety-50); }
-.plan-sec { margin-top: 14px; }
-.plan-sec h4 { margin: 0 0 6px; font-size: 13px; text-transform: uppercase; letter-spacing: .05em; color: var(--ink-2); display: flex; gap: 8px; align-items: center; }
-.plan-sec .pi { font-size: 15px; }
-.hz-grid { display: grid; gap: 10px; }
-.hz { border: 1px solid var(--line); border-left: 4px solid var(--safety); border-radius: 10px; padding: 8px 10px; background: #fffdf6; }
-.hz-name { font-weight: 700; font-size: 14px; margin: 2px 0 2px 8px; color: var(--safety-ink); }
-.plan-sec.tbm ol { margin: 0; padding-left: 22px; display: grid; gap: 4px; }
-.plan-sec.tbm li { font-size: 14px; }
-.plan-note { margin-top: 12px; font-size: 13px; color: var(--warn); background: var(--warn-50); border-radius: 8px; padding: 8px 10px; }

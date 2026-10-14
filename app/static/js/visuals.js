@@ -1,4 +1,4 @@
-/* SafetyAgent visuals: draws the checked visual specs (steps, checklist, compare, limits, intervals) and task plans.
+/* SafetyAgent visuals: draws the checked visual specs (steps, checklist, compare, limits, intervals).
    Everything is built from escaped text; citation numbers become .cite buttons that the caller wires to the
    pop-over (DA.Popover.attach). Needs common.js and i18n.js. */
 "use strict";
@@ -90,23 +90,4 @@ DA.renderVisual = function (spec, passages) {
   const body = { steps: renderSteps, checklist: renderChecklist, compare: renderCompare, limits: renderLimits,
                  intervals: renderIntervals }[spec.type];
   return body ? `<div class="vis vis-${spec.type}">${visHead(spec)}${body(spec, passages)}</div>` : "";
-};
-
-/* Task plan: hazards with controls, permits, checks before work, PPE, and the TBM script. */
-DA.renderPlan = function (plan, passages) {
-  const list = (items) => `<ul class="vis-check">${items.map((x) => `<li><label><input type="checkbox"><span class="box"></span>
-      <span><span class="lbl">${DA.esc(x.text)}</span> ${DA.cites(x.cite, passages)}</span></label></li>`).join("")}</ul>`;
-  const sec = (key, items, icon) => items && items.length
-    ? `<section class="plan-sec"><h4><span class="pi">${icon}</span>${DA.t(`plan.${key}`)}</h4>${list(items)}</section>` : "";
-  const hazards = (plan.hazards || []).map((h) => `<div class="hz"><div class="hz-name">⚠ ${DA.esc(h.hazard)}</div>${list(h.controls)}</div>`).join("");
-  const tbm = (plan.tbm_script || []).length
-    ? `<section class="plan-sec tbm"><h4><span class="pi">🗣</span>${DA.t("plan.tbm")}</h4><ol>${plan.tbm_script.map((x) =>
-        `<li>${DA.esc(x.text)} ${DA.cites(x.cite, passages)}</li>`).join("")}</ol></section>` : "";
-  return `<div class="vis plan">
-    <div class="vis-head"><span class="vis-ico plan-ico">🧰</span><div><div class="vis-title">${DA.esc(plan.title)}</div>
-      <div class="vis-kind">${DA.t("plan.kind")}</div></div><span class="chip ok vis-checked">✓ ${DA.t("vis.checked")}</span></div>
-    ${hazards ? `<section class="plan-sec"><h4><span class="pi">🛡</span>${DA.t("plan.hazards")}</h4><div class="hz-grid">${hazards}</div></section>` : ""}
-    ${sec("permits", plan.permits, "📝")}${sec("before_start", plan.before_start, "🔎")}${sec("ppe", plan.ppe, "⛑")}${tbm}
-    ${plan.not_covered ? `<div class="plan-note">${DA.t("plan.notCovered")}: ${DA.esc(plan.not_covered)}</div>` : ""}
-  </div>`;
 };

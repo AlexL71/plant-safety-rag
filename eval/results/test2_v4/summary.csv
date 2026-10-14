@@ -1,0 +1,2 @@
+﻿setup,questions,recall@5,recall@5_cross_lingual,mrr@10,median_search_s,correct_refusals,false_refusals,answers_citing_gold,citation_precision,median_llm_s
+F,27,24/24 = 100%,12/12 = 100%,0.931,16.1,3/3 = 100%,0/24 = 0%,24/24 = 100%,32/37 = 86%,4.8

@@ -1,0 +1,31 @@
+Loading weights:   0%|          | 0/393 [00:00<?, ?it/s]Loading weights:   3%|▎         | 11/393 [00:00<00:03, 104.05it/s]Loading weights:   7%|▋         | 26/393 [00:00<00:02, 128.92it/s]Loading weights:  10%|▉         | 39/393 [00:00<00:03, 91.44it/s] Loading weights:  14%|█▎        | 54/393 [00:00<00:03, 106.84it/s]Loading weights:  18%|█▊        | 71/393 [00:00<00:02, 118.44it/s]Loading weights:  21%|██▏       | 84/393 [00:00<00:02, 118.70it/s]Loading weights:  25%|██▍       | 97/393 [00:00<00:02, 101.85it/s]Loading weights:  27%|██▋       | 108/393 [00:01<00:03, 86.69it/s]Loading weights:  30%|███       | 118/393 [00:01<00:03, 85.78it/s]Loading weights:  34%|███▍      | 134/393 [00:01<00:02, 102.24it/s]Loading weights:  37%|███▋      | 145/393 [00:01<00:02, 94.19it/s] Loading weights:  41%|████      | 160/393 [00:01<00:02, 101.96it/s]Loading weights:  44%|████▎     | 171/393 [00:01<00:02, 102.59it/s]Loading weights:  46%|████▋     | 182/393 [00:01<00:02, 94.89it/s] Loading weights: 100%|██████████| 393/393 [00:01<00:00, 212.95it/s]
+[1/27] F q061 gold@1  (78.9s)
+[2/27] F q062 gold@1  (17.4s)
+[3/27] F q063 gold@1  (16.0s)
+[4/27] F q064 gold@1  (18.5s)
+[5/27] F q065 gold@1  (16.8s)
+[6/27] F q066 gold@1  (17.1s)
+[7/27] F q067 gold@1  (30.4s)
+[8/27] F q068 gold@1  (17.1s)
+[9/27] F q069 gold@1  (24.2s)
+[10/27] F q070 gold@1  (19.3s)
+[11/27] F q071 gold@1  (15.3s)
+[12/27] F q072 gold@1  (15.9s)
+[13/27] F q073 gold@1  (19.9s)
+[14/27] F q074 gold@1  (13.5s)
+[15/27] F q075 gold@1  (15.9s)
+[16/27] F q076 gold@3  (15.8s)
+[17/27] F q077 gold@2  (15.2s)
+[18/27] F q078 gold@1  (12.8s)
+[19/27] F q079 gold@2  (14.7s)
+[20/27] F q080 gold@1  (15.5s)
+[21/27] F q081 gold@1  (14.0s)
+[22/27] F q082 gold@1  (16.8s)
+[23/27] F q083 gold@1  (15.0s)
+[24/27] F q084 gold@1  (16.1s)
+[25/27] F q085 gold@- refused (17.1s)
+[26/27] F q086 gold@- refused (16.9s)
+[27/27] F q087 gold@- refused (15.8s)
+{"setup": "F", "questions": 27, "recall@5": "24/24 = 100%", "recall@5_cross_lingual": "12/12 = 100%", "mrr@10": "0.931", "median_search_s": "16.1", "correct_refusals": "3/3 = 100%", "false_refusals": "0/24 = 0%", "answers_citing_gold": "24/24 = 100%", "citation_precision": "32/37 = 86%", "median_llm_s": "4.8"}
+
+Results: C:\Users\dadab\OneDrive\Рабочий стол\plant-safety-rag\eval\results\test2_v4

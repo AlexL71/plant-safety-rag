@@ -286,8 +286,8 @@ pipeline above unchanged:
 - *Admin login.* The password is never stored, only a PBKDF2 hash (310,000 rounds) in `secrets/`. A login creates a
   random session token (8 h) in an HttpOnly cookie. Users cannot call any admin endpoint.
 - *One question at a time.* The reranker uses all CPU cores, so questions are processed one after another.
-- *Storage.* One SQLite file (`data/app/docagent.sqlite`, name kept from the first version) for chats, reviews,
-  notices and settings.
+- *Storage.* One SQLite file (`data/app/docagent.sqlite`, name kept from the first version) for chats, reviews
+  and settings.
 - *Safety.* Runs on `127.0.0.1` only. Answer text is escaped before display (the model cannot inject HTML).
 
 **Settings:** `configs/config.yaml`, section `web` (port, chat limits, history turns, session hours).
@@ -339,33 +339,37 @@ total.
 
 ---
 
-## Step 9: The agent (`agent.py`, `visuals.py`, `notices.py`, `checks.py`)
+## Step 9: The agent (`agent.py`, `visuals.py`, `checks.py`)
 
-**What it is.** One entry point decides what a request needs and uses the right tool. All tools use the same
-search (Step 4) and the same rule: write only from the cited passages.
+**What it is.** One entry point understands the request, plans the search, answers, and adds a visual when it
+helps. Everything uses the same search (Step 4) and the same rule: write only from the cited passages.
+
+*Scope decision (2026-10-15).* Earlier versions also made job plans with a TBM script and printable notices
+(posters, leaflets, QR codes, second language, admin approval). They worked (6/6 each in `eval/results/agent_v3`),
+but they made the app harder to understand for site workers, so they were removed: SafetyAgent now does one thing,
+a clear cited answer with a visual when needed. A job question ("tomorrow we weld inside a tank, what do we
+prepare?") or a request for a poster gets the same cited answer, usually with a checklist. The old code is in the
+git history.
 
 **The planner.** Every request starts with one short model call with *structured output* (the model must return
 JSON that matches a schema). It reads the new message and the last three chat turns and returns:
 
 | Field | Meaning | Example ("핼멧 안 쓰면 안 되는 작업 알려줘") |
 |---|---|---|
-| tool | answer, task_plan, notice or chitchat | answer |
+| tool | answer or chitchat (greetings, questions about the assistant, off-topic) | answer |
 | visual | steps, checklist, limits, intervals, compare, or none (most questions need none) | checklist |
 | question | the message as one complete question; follow-ups are resolved ("OSHA에서는?" → the full question) | 안전모를 반드시 착용해야 하는 작업은? |
 | question_translated | the same full question in the other language; the reranker reads passages in that language against it | Which tasks require a safety helmet? |
 | query_ko, query_en | one search query per language, in the words the regulations use; output words ("make a poster", "보여줘") are dropped; article numbers are kept only if the user wrote them | 보호구의 지급 착용 안전모 물체 낙하 비래 추락 작업 |
 | country | KR, US or both; "only OSHA" searches only the US documents | both |
 
-The user does not pick a mode. Workers ask in their own words; the planner decides whether a chart, a job plan or a
-notice fits. (The admin test console can still force a tool.)
+The user does not pick a mode. Workers ask in their own words; the planner decides whether a visual helps.
 
 | Tool | What happens | Model calls |
 |---|---|---|
 | answer | search with the question + both planner queries → cited answer (Step 5) | 1 + planner |
 | answer + visual | the same, then a structured visual from the same passages | 2 + planner |
 | answer + compare | search, keep the best 3 Korean + 3 English passages → answer + Korea-vs-US table | 2 + planner |
-| task_plan | split the job into ≤ 3 hazards (each with its own KO + EN query) → one search per hazard → cited plan + TBM script | 2 + planner |
-| notice | search → poster content (headline, rules, do / don't, key numbers) → stored for editing | 1 + planner |
 | chitchat | fixed reply about what the assistant can do; no search | planner only |
 
 **Why search with the user's words *and* the planner's words.** The planner fixes vocabulary (헬멧 → 안전모) and
@@ -384,22 +388,14 @@ country filter leaves only documents in the other language.
 types (steps, checklist, compare, limits, intervals) as JSON, and the web page draws them. That keeps the
 design consistent, makes the output checkable, and cannot inject anything into the page.
 
-**The checks (`checks.py`).** Before anything is shown, printed or posted:
+**The checks (`checks.py`).** Before a visual is shown:
 1. every element must cite an evidence passage that exists, and
 2. every number in the element must appear in a cited passage (the *numbers guard*). "1,000" and "1000" count
    as the same; number words in the source ("every three years", "annually", "a half hour") count too.
-Elements that fail are dropped; if too few survive, there is no visual (the text answer stays). The same check
-runs on job plans, notices, and again on any line a person edits in the notice editor (shown as a warning).
+Elements that fail are dropped; if too few survive, there is no visual (the text answer stays).
 
-**Notices.** Four print templates (A4 poster, A5 leaflet, square messenger card, A4 TBM sheet with a sign-off
-table), a QR code to each cited clause, and an optional second language for foreign workers. The translation is
-translated back automatically; a line passes only if its numbers survive both directions, and a reviewer can read
-the back-translation without knowing the language. A notice is a **draft** until an admin approves it; any edit
-after approval needs a new approval. Only approved notices open from the share link.
+**Why a small state machine, not an open loop.** Each request takes at most five steps (plan, search, rerank,
+answer, visual), every step is shown in the progress list, and every path can be tested. An open "think-act" loop
+would be harder to explain, slower on a laptop and harder to evaluate.
 
-**Why a small state machine, not an open loop.** Each request takes at most about four steps, every step is
-shown in the progress list, and every path can be tested. An open "think-act" loop would be harder to explain,
-slower on a laptop and harder to evaluate.
-
-**Settings:** `configs/config.yaml`, sections `agent`, `visuals`, `notices`, and `web.modes` /
-`web.public_base_url` (the address QR codes point to; set it to the server's network address for phones).
+**Settings:** `configs/config.yaml`, sections `agent` and `visuals`.

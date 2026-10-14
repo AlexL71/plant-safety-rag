@@ -150,7 +150,7 @@ class Retriever:
                on_stage: Callable[[str], None] | None = None, rerank_candidates: int | None = None,
                alt_queries: dict[str, str] | None = None, country: str | None = None) -> list[Hit]:
         """Return the top-k hits for `query` under `setup` (A–F). Stage times go to self.timings.
-        `rerank_candidates` overrides the config (the task planner reranks fewer passages per hazard).
+        `rerank_candidates` overrides the config.
 
         Setup F ("planner": true) takes the agent's search plan: `alt_queries` = {"ko": ..., "en": ...} (the request
         rewritten in the documents' words, in both languages) are searched next to the original question, and

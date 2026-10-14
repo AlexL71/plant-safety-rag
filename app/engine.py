@@ -19,9 +19,7 @@ from plant_rag import agent
 from plant_rag.config import load_config, resolve_path
 from plant_rag.generate import detect_lang, refusal_threshold
 from plant_rag.ingest import read_manifest
-from plant_rag.notices import draft_notice, translate_notice
 from plant_rag.retrieve import Hit, Retriever
-from plant_rag.visuals import make_visual
 
 log = logging.getLogger(__name__)
 
@@ -95,61 +93,19 @@ class Engine:
                  "score": round(h.rerank_score, 4) if h.rerank_score is not None else round(h.score, 4)}
                 for n, h in enumerate(hits, 1)]
 
-    def _hits_from(self, evidence: list[dict[str, Any]]) -> list[Hit]:
-        """Rebuild Hit objects from a stored message's evidence list (no new search)."""
-        hits = []
-        for e in sorted(evidence, key=lambda e: e["n"]):
-            c = self.chunks.get(e["chunk_id"])
-            if c:
-                hits.append(Hit(c, e["score"], rerank_score=e["score"]))
-        return hits
-
     def run(self, question: str, history: list[tuple[str, str]], setup: str,
-            on_stage: Callable[[str], None] | None = None, answer_lang: str | None = None,
-            mode: str = "auto") -> dict[str, Any]:
+            on_stage: Callable[[str], None] | None = None, answer_lang: str | None = None) -> dict[str, Any]:
         """Handle one chat request through the agent (with chat history for follow-ups). Returns JSON-ready data.
-        `answer_lang` ("ko" / "en") forces the answer language; None follows the question. `mode` = "auto"
-        (the agent decides) or a fixed intent (answer, visual, compare, task_plan, notice)."""
+        `answer_lang` ("ko" / "en") forces the answer language; None follows the question."""
         lang = answer_lang or detect_lang(question)
         retriever = self._require_ready()
         with self.ask_lock:
-            res = agent.run(question, history, retriever, self.cfg, setup, mode=mode, lang=lang, on_stage=on_stage)
+            res = agent.run(question, history, retriever, self.cfg, setup, lang=lang, on_stage=on_stage)
         hits = res.pop("evidence_hits", [])
-        res |= {"evidence": self._evidence(hits), "lang_choice": answer_lang or "auto", "mode": mode,
+        res |= {"evidence": self._evidence(hits), "lang_choice": answer_lang or "auto",
                 "threshold": refusal_threshold(self.cfg, setup)}
         res["timings"] = {k: round(v, 2) for k, v in (res.get("timings") or {}).items()}
         return res
-
-    def visual_for(self, payload: dict[str, Any], preferred: str | None = None) -> dict[str, Any]:
-        """Make a visual for an answer that already exists, from its stored evidence (one model call)."""
-        self._require_ready()
-        hits = self._hits_from(payload.get("evidence", []))
-        question = payload.get("standalone") or payload.get("question", "")
-        with self.ask_lock:
-            return make_visual(question, hits, self.cfg, payload.get("lang", "en"), preferred,
-                               answer_text=payload.get("text"))
-
-    def notice_from(self, topic: str, lang: str, evidence: list[dict[str, Any]] | None = None,
-                    setup: str = "F", on_stage: Callable[[str], None] | None = None) -> dict[str, Any]:
-        """Draft notice content from stored evidence, or search for the topic first."""
-        retriever = self._require_ready()
-        stage = on_stage or (lambda s: None)
-        with self.ask_lock:
-            if evidence:
-                hits = self._hits_from(evidence)
-            else:
-                stage("route")
-                plan = agent.plan_request(topic, [], self.cfg)
-                hits = agent.plan_search(retriever, plan, setup, int(self.cfg["retrieval"]["final_k"]), on_stage=stage)
-            stage("notice")
-            res = draft_notice(topic, hits, self.cfg, lang)
-        res.pop("raw", None)
-        return res | {"evidence": self._evidence(hits)}
-
-    def translate(self, content: dict[str, Any], target: str) -> dict[str, Any]:
-        self._require_ready()
-        with self.ask_lock:
-            return translate_notice(content, target, self.cfg)
 
     # ---------------------------------------------------------------- documents
     def passage(self, chunk_id: str, with_boxes: bool = False) -> dict[str, Any] | None:
