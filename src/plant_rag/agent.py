@@ -19,7 +19,7 @@ from typing import TYPE_CHECKING, Any, Callable
 
 from plant_rag.checks import check_elements, merge_stats
 from plant_rag.generate import (LANG_NAME, NOT_FOUND, answer, call_llm_record, condense_question, detect_lang,
-                                light_cfg, parse_json)
+                                light_cfg, make_search_query, parse_json)
 from plant_rag.notices import draft_notice
 from plant_rag.visuals import VISUAL_TYPES, evidence_block, make_visual
 
@@ -256,11 +256,16 @@ def run(question: str, history: list[tuple[str, str]], retriever: Retriever, cfg
         return out
 
     k = int(cfg["retrieval"]["final_k"])
+    query = standalone
+    if intent in ("notice", "visual", "compare"):  # "make / show ..." requests: search for the rule, not the request
+        stage("query")
+        query = make_search_query(standalone, cfg)
+        out["search_query"] = query
     if intent == "compare":
         per_lang = int(cfg.get("agent", {}).get("compare_per_language", 3))
-        hits = balance_languages(retriever.search(standalone, setup=setup, k=2 * k, on_stage=stage), per_lang)
+        hits = balance_languages(retriever.search(query, setup=setup, k=2 * k, on_stage=stage), per_lang)
     else:
-        hits = retriever.search(standalone, setup=setup, k=k, on_stage=stage)
+        hits = retriever.search(query, setup=setup, k=k, on_stage=stage)
     out["timings"] = dict(retriever.timings)
     out["translated"] = getattr(retriever, "last_translation", None) if cfg["retrieval"]["setups"][setup].get("translate") else None
 

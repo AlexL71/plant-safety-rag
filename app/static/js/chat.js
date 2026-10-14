@@ -15,7 +15,7 @@ const FINISH_PAUSE_MS = 900;  // how long the all-green checklist stays visible 
 const FADE_MS = 180;          // checklist fade-out before the answer appears
 const LANGS = ["auto", "ko", "en"];  // answer language: auto = same language as the question
 // every stage the server can report, in display order; labels: "stage.<name>" in i18n.js
-const STAGES = ["route", "condense", "plan", "translate", "search", "rerank", "answer", "visual", "notice", "check"];
+const STAGES = ["route", "condense", "query", "plan", "translate", "search", "rerank", "answer", "visual", "notice", "check"];
 const DEFAULT_STAGES = {   // shown (waiting) from the start, per mode; others appear when reported
   auto: ["route", "search", "rerank", "answer"],
   answer: ["search", "rerank", "answer"],

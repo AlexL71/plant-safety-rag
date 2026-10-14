@@ -93,7 +93,7 @@ def public_message(m: dict[str, Any], admin: bool = False) -> dict[str, Any]:
         out["evidence"] = [{**(engine.passage(e["chunk_id"]) or {}), "n": e["n"], "score": e["score"],
                             "cited": e["n"] in p.get("cited", [])} for e in p.get("evidence", [])]
         out |= {k: p.get(k) for k in ("setup", "threshold", "timings", "llm_s", "llm_cached", "question", "route",
-                                      "mode", "visual_check", "visual_reason", "plan_check", "notice_check")}
+                                      "mode", "visual_check", "visual_reason", "plan_check", "notice_check", "search_query")}
     return out
 
 
