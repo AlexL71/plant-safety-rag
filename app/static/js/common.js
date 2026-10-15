@@ -82,13 +82,19 @@ DA.renderAnswer = function (text, passages) {
   for (const raw of lines) {
     const line = raw.trim();
     const ul = line.match(/^[-*•]\s+(.*)$/);
-    const ol = line.match(/^\d+[.)]\s+(.*)$/);
+    const ol = line.match(/^(\d+)[.)]\s+(.*)$/);
     if (!line) { flushPara(); closeList(); continue; }
     if (ul || ol) {
       flushPara();
       const kind = ul ? "ul" : "ol";
-      if (list !== kind) { closeList(); html += `<${kind}>`; list = kind; }
-      html += `<li>${inline((ul || ol)[1], passages)}</li>`;
+      if (list !== kind) {
+        closeList();
+        // keep the model's numbering when a numbered list is split by bullets ("1. … - … 2. …")
+        const start = ol && Number(ol[1]) > 1 ? ` start="${Number(ol[1])}"` : "";
+        html += `<${kind}${start}>`;
+        list = kind;
+      }
+      html += `<li>${inline(ul ? ul[1] : ol[2], passages)}</li>`;
       continue;
     }
     closeList();

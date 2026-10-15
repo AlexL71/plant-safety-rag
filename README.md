@@ -16,7 +16,14 @@ country's documents to search and whether a visual helps, then answers:
 Nothing is shown unless it is checked: every visual element must cite a passage, and every number must appear in
 that passage. The code package is named `plant_rag` (the project started as a process-safety RAG).
 
-![SafetyAgent landing page](docs/figures/safetyagent_landing.png)
+**Demo (80 s):** a Korean question answered with a checklist → hover and click a citation → a follow-up limited to
+OSHA → Korea vs US in one table. Waiting time is sped up. [Watch the MP4 with full resolution](docs/demo/safetyagent_demo.mp4).
+
+![SafetyAgent demo](docs/demo/safetyagent_demo.gif)
+
+**How it works**
+
+![How SafetyAgent answers a question](docs/figures/how_it_works.svg)
 
 ## Results
 
@@ -96,15 +103,7 @@ Details: [`eval/results/`](eval/results/) (per-question rows, summaries, grades)
 
 ## How it works
 
-```mermaid
-flowchart LR
-    U["Question (KO or EN)<br/>+ last chat turns"] --> R{"Planner (1 short model call)<br/>full question · KO + EN search words<br/>country · visual or none"}
-    R -->|safety question| S["Search<br/>question + planner queries<br/>BM25 + dense → RRF → reranker<br/>KR / US documents only if asked"]
-    R -->|greeting / off-topic| C["What I can do"]
-    S --> G["Gemini writes from the passages only<br/>cited answer (+ visual spec)"]
-    G --> K["Checks: valid citation + every number<br/>found in the cited passage"]
-    K --> O["Chat: answer, visual, clickable sources"]
-```
+The diagram at the top shows the flow. Step by step:
 
 1. **Ingest and chunk** 29 public PDFs by clause: law articles (제N조), KOSHA sections, CFR paragraphs and
    appendices. Korean KOSHA PDFs have no space characters (rebuilt from character gaps); running headers, page
@@ -133,6 +132,8 @@ Plain-English notes on every step: [`docs/how_it_works.md`](docs/how_it_works.md
 | **Chat** (`/chat`) | Ask in KO/EN in your own words; the agent adds a chart or checklist when it helps; "Searched as …" line; live progress of each agent step; citations: **hover** for the passage, **click** for the original PDF with the passage outlined; answer language Auto / 한국어 / English; 50 chats per browser. |
 | **Admin** (`/admin`, password) | Review answers against all passages the model saw, with the planner's decision (visual, country, search queries); test console with any search setup; documents; settings. |
 | **Landing** (`/`) | One short page for site workers: what it does, measured results, start asking. EN / 한국어 interface. |
+
+![Landing page](docs/figures/safetyagent_landing.png)
 
 ![Korea vs US comparison in the chat](docs/figures/safetyagent_chat_visual.png)
 

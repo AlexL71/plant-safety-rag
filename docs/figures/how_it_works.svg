@@ -1,0 +1,124 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 660" width="1200" height="660" font-family="Segoe UI, Helvetica, Arial, sans-serif">
+  <title>How SafetyAgent answers a question</title>
+  <defs>
+    <marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#1b2a7a"/>
+    </marker>
+  </defs>
+  <rect x="0" y="0" width="1200" height="660" rx="18" fill="#ffffff"/>
+
+  <text x="40" y="48" font-size="24" font-weight="700" fill="#0f172a">How SafetyAgent answers a question</text>
+  <text x="40" y="74" font-size="14.5" fill="#475569">Agentic RAG: a planner prepares the search, every answer is written only from the retrieved clauses, and everything shown is checked.</text>
+
+  <!-- row 1 -->
+  <g>
+    <rect x="30" y="100" width="230" height="170" rx="14" fill="#f1f5f9" stroke="#cbd5e1"/>
+    <text x="48" y="130" font-size="17" font-weight="700" fill="#0f172a">Worker's question</text>
+    <text x="48" y="156" font-size="13.5" fill="#334155">Korean or English,</text>
+    <text x="48" y="176" font-size="13.5" fill="#334155">in their own words</text>
+    <text x="48" y="196" font-size="13.5" fill="#334155">+ the last 3 chat turns</text>
+    <text x="48" y="228" font-size="13.5" font-style="italic" fill="#1b2a7a">“핼멧 안 쓰면 안 되는 작업?”</text>
+    <text x="48" y="250" font-size="13.5" font-style="italic" fill="#1b2a7a">“And under OSHA?”</text>
+  </g>
+
+  <g>
+    <rect x="300" y="100" width="300" height="170" rx="14" fill="#1b2a7a"/>
+    <text x="318" y="130" font-size="17" font-weight="700" fill="#ffffff">① Planner</text>
+    <text x="420" y="130" font-size="13" fill="#c7d2fe">1 short Gemini call (JSON)</text>
+    <text x="318" y="158" font-size="13.5" fill="#ffffff">• full question, in Korean and English</text>
+    <text x="318" y="180" font-size="13.5" fill="#ffffff">• search words the rules use</text>
+    <text x="330" y="199" font-size="12.5" fill="#c7d2fe">  핼멧 → 안전모, “mask” → 호흡용 보호구</text>
+    <text x="318" y="221" font-size="13.5" fill="#ffffff">• country: KR, US or both</text>
+    <text x="318" y="243" font-size="13.5" fill="#ffffff">• a visual only when it helps</text>
+    <text x="318" y="262" font-size="12" fill="#ffd25e">greeting / off-topic → short reply, no search</text>
+  </g>
+
+  <g>
+    <rect x="640" y="100" width="260" height="170" rx="14" fill="#eef2ff" stroke="#c7d2fe"/>
+    <text x="658" y="130" font-size="17" font-weight="700" fill="#0f172a">② Hybrid search</text>
+    <text x="658" y="153" font-size="13" fill="#475569">29 documents · 1,941 clauses</text>
+    <text x="658" y="180" font-size="13.5" fill="#334155">• keywords: BM25 (Kiwi for Korean)</text>
+    <text x="658" y="202" font-size="13.5" fill="#334155">• meaning: Gemini embeddings</text>
+    <text x="670" y="220" font-size="13.5" fill="#334155">in FAISS</text>
+    <text x="658" y="242" font-size="13.5" fill="#334155">• user's words + planner's words</text>
+    <text x="658" y="262" font-size="13.5" fill="#334155">→ rank fusion (RRF)</text>
+  </g>
+
+  <g>
+    <rect x="940" y="100" width="230" height="170" rx="14" fill="#eef2ff" stroke="#c7d2fe"/>
+    <text x="958" y="130" font-size="17" font-weight="700" fill="#0f172a">③ Reranker</text>
+    <text x="958" y="153" font-size="13" fill="#475569">bge-reranker-v2-m3, local CPU</text>
+    <text x="958" y="180" font-size="13.5" fill="#334155">reads each passage against</text>
+    <text x="958" y="200" font-size="13.5" fill="#334155">the full question in the</text>
+    <text x="958" y="220" font-size="13.5" fill="#334155">passage's language</text>
+    <rect x="955" y="234" width="200" height="26" rx="13" fill="#fff4d6"/>
+    <text x="1055" y="252" font-size="13" text-anchor="middle" fill="#92400e">best score &lt; 0.15 → “not found”</text>
+  </g>
+
+  <!-- arrows row 1 -->
+  <line x1="262" y1="185" x2="296" y2="185" stroke="#1b2a7a" stroke-width="2.5" marker-end="url(#arr)"/>
+  <line x1="602" y1="185" x2="636" y2="185" stroke="#1b2a7a" stroke-width="2.5" marker-end="url(#arr)"/>
+  <line x1="902" y1="185" x2="936" y2="185" stroke="#1b2a7a" stroke-width="2.5" marker-end="url(#arr)"/>
+  <!-- down to row 2 -->
+  <path d="M1055 272 L1055 318" stroke="#1b2a7a" stroke-width="2.5" fill="none" marker-end="url(#arr)"/>
+  <text x="1065" y="300" font-size="12.5" fill="#475569">top 5 passages</text>
+
+  <!-- row 2 (right to left) -->
+  <g>
+    <rect x="940" y="322" width="230" height="170" rx="14" fill="#eef2ff" stroke="#c7d2fe"/>
+    <text x="958" y="352" font-size="17" font-weight="700" fill="#0f172a">④ Answer</text>
+    <text x="958" y="375" font-size="13" fill="#475569">Gemini, from the passages only</text>
+    <text x="958" y="402" font-size="13.5" fill="#334155">• every sentence cites [n]</text>
+    <text x="958" y="424" font-size="13.5" fill="#334155">• answers in the question's</text>
+    <text x="970" y="442" font-size="13.5" fill="#334155">language (KO ↔ EN)</text>
+    <text x="958" y="464" font-size="13.5" fill="#334155">• says “not found” when the</text>
+    <text x="970" y="482" font-size="13.5" fill="#334155">passages don't answer it</text>
+  </g>
+
+  <g>
+    <rect x="640" y="322" width="260" height="170" rx="14" fill="#eef2ff" stroke="#c7d2fe"/>
+    <text x="658" y="352" font-size="17" font-weight="700" fill="#0f172a">⑤ Visual (if planned)</text>
+    <text x="658" y="375" font-size="13" fill="#475569">a JSON spec, drawn by the web page</text>
+    <text x="658" y="402" font-size="13.5" fill="#334155">• steps · checklist</text>
+    <text x="658" y="424" font-size="13.5" fill="#334155">• limits on a scale · deadlines</text>
+    <text x="658" y="446" font-size="13.5" fill="#334155">• Korea vs US side by side</text>
+    <text x="658" y="472" font-size="13" fill="#475569">the model never writes code or HTML</text>
+  </g>
+
+  <g>
+    <rect x="300" y="322" width="300" height="170" rx="14" fill="#fff8e6" stroke="#f5c451"/>
+    <text x="318" y="352" font-size="17" font-weight="700" fill="#0f172a">⑥ Checks</text>
+    <text x="400" y="352" font-size="13" fill="#92400e">no model, cheap, repeatable</text>
+    <text x="318" y="382" font-size="13.5" fill="#334155">• every element cites a passage</text>
+    <text x="330" y="401" font-size="13.5" fill="#334155">that was really retrieved</text>
+    <text x="318" y="425" font-size="13.5" fill="#334155">• every number (18%, 2 m, 30 min)</text>
+    <text x="330" y="444" font-size="13.5" fill="#334155">appears in that passage</text>
+    <text x="318" y="470" font-size="13.5" fill="#b45309">• failures are dropped, not shown</text>
+  </g>
+
+  <g>
+    <rect x="30" y="322" width="230" height="170" rx="14" fill="#ecfdf5" stroke="#86efac"/>
+    <text x="48" y="352" font-size="17" font-weight="700" fill="#0f172a">Chat</text>
+    <text x="48" y="380" font-size="13.5" fill="#334155">answer + visual</text>
+    <text x="48" y="402" font-size="13.5" fill="#334155">hover [n] → the clause</text>
+    <text x="48" y="424" font-size="13.5" fill="#334155">click → original PDF,</text>
+    <text x="60" y="442" font-size="13.5" fill="#334155">passage outlined</text>
+    <text x="48" y="468" font-size="13.5" fill="#334155">“Searched as …” line</text>
+  </g>
+
+  <!-- arrows row 2 -->
+  <line x1="938" y1="407" x2="904" y2="407" stroke="#1b2a7a" stroke-width="2.5" marker-end="url(#arr)"/>
+  <line x1="638" y1="407" x2="604" y2="407" stroke="#1b2a7a" stroke-width="2.5" marker-end="url(#arr)"/>
+  <line x1="298" y1="407" x2="264" y2="407" stroke="#1b2a7a" stroke-width="2.5" marker-end="url(#arr)"/>
+
+  <!-- results band -->
+  <rect x="30" y="520" width="1140" height="110" rx="14" fill="#f8fafc" stroke="#e2e8f0"/>
+  <text x="50" y="550" font-size="15" font-weight="700" fill="#0f172a">Measured on held-out questions (setup F)</text>
+  <g font-size="14" fill="#334155">
+    <text x="50" y="580"><tspan font-weight="700" fill="#1b2a7a">58/58</tspan> right clause in the top 5</text>
+    <text x="320" y="580"><tspan font-weight="700" fill="#1b2a7a">28/28</tspan> Korean ↔ English questions</text>
+    <text x="610" y="580"><tspan font-weight="700" fill="#1b2a7a">9/9</tspan> correct “not found”</text>
+    <text x="820" y="580"><tspan font-weight="700" fill="#1b2a7a">56/57</tspan> answers fully faithful</text>
+    <text x="50" y="608" font-size="13" fill="#64748b">AI-graded, not by a human safety expert · laptop CPU, ~15–30 s per question · all model calls go through one function, so an on-premise model can replace Gemini</text>
+  </g>
+</svg>
